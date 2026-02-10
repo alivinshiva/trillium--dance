@@ -1,0 +1,96 @@
+import React from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
+import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
+import Navbar from './components/Navbar';
+import Hero from './components/Hero';
+import Features from './components/Features';
+import CTA from './components/CTA';
+import Footer from './components/Footer';
+import SignInPage from './components/SignInPage';
+import SignUpPage from './components/SignUpPage';
+import UploadStep1 from './components/upload/UploadStep1';
+import UploadStep2 from './components/upload/UploadStep2';
+import UploadStep3 from './components/upload/UploadStep3';
+import AdminDashboard from './components/admin/AdminDashboard';
+import Discovered from './components/Discovered';
+
+const LandingPage = () => {
+  return (
+    <>
+      <Navbar />
+      <main>
+        <Hero />
+        <Features />
+        <CTA />
+      </main>
+      <Footer />
+    </>
+  );
+};
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/sign-in/*" element={<SignInPage />} />
+      <Route path="/sign-up/*" element={<SignUpPage />} />
+      {/* Upload Flow */}
+      <Route path="/upload" element={<UploadStep1 />} />
+      <Route
+        path="/upload/step-2"
+        element={
+          <>
+            <SignedIn>
+              <UploadStep2 />
+            </SignedIn>
+            <SignedOut>
+              <RedirectToSignIn />
+            </SignedOut>
+          </>
+        }
+      />
+      <Route
+        path="/upload/step-3"
+        element={
+          <>
+            <SignedIn>
+              <UploadStep3 />
+            </SignedIn>
+            <SignedOut>
+              <RedirectToSignIn />
+            </SignedOut>
+          </>
+        }
+      />
+      {/* Discovered Page - Protected */}
+      <Route
+        path="/discovered"
+        element={
+          <>
+            <SignedIn>
+              <Discovered />
+            </SignedIn>
+            <SignedOut>
+              <RedirectToSignIn />
+            </SignedOut>
+          </>
+        }
+      />
+      <Route
+        path="/dance-admin"
+        element={
+          <>
+            <SignedIn>
+              <AdminDashboard />
+            </SignedIn>
+            <SignedOut>
+              <RedirectToSignIn />
+            </SignedOut>
+          </>
+        }
+      />
+    </Routes>
+  );
+}
+
+export default App;
