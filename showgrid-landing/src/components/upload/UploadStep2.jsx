@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVideo } from '../../context/VideoContext';
 import { useUser } from '@clerk/clerk-react';
@@ -6,13 +6,28 @@ import { Play, RotateCw, RotateCcw, Headphones, Download, CheckCircle, XCircle, 
 
 const UploadStep2 = () => {
     const navigate = useNavigate();
-    const { addVideo } = useVideo();
+    const { addVideo, selectedChallenge } = useVideo();
     const { user } = useUser();
+
+    // Redirect if no challenge selected
+    useEffect(() => {
+        if (!selectedChallenge) {
+            navigate('/upload');
+        }
+    }, [selectedChallenge, navigate]);
 
     // State for file upload
     const [file, setFile] = useState(null);
     const [videoPreview, setVideoPreview] = useState(null);
     const fileInputRef = useRef(null);
+    // Audio ref to update source when challenge changes
+    const audioRef = useRef(null);
+
+    useEffect(() => {
+        if (audioRef.current) {
+            audioRef.current.load();
+        }
+    }, [selectedChallenge]);
 
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
@@ -37,6 +52,8 @@ const UploadStep2 = () => {
         navigate('/upload/step-3');
     };
 
+    if (!selectedChallenge) return null;
+
     return (
         <div className="min-h-screen bg-dark-lighter pt-24 pb-12 text-white">
             <div className="container">
@@ -53,6 +70,9 @@ const UploadStep2 = () => {
                 </div>
 
                 <div className="text-center mb-12">
+                    <div className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-4 border border-primary/20">
+                        CHALLENGE: {selectedChallenge.title.toUpperCase()}
+                    </div>
                     <h1 className="text-4xl font-extrabold mb-4">Master the Audio</h1>
                     <p className="text-white/60 max-w-xl mx-auto">
                         Every viral dance starts with the perfect timing. Listen to the official segment you'll be using for your challenge.
@@ -73,12 +93,13 @@ const UploadStep2 = () => {
 
                             <div className="text-center mb-6">
                                 <h3 className="text-xl font-bold mb-1">The 60-second Hook</h3>
-                                <span className="text-primary font-medium text-sm">ShowGrid Official Audio Track</span>
+                                <span className="text-primary font-medium text-sm">Official Challenge Audio Track</span>
                             </div>
 
                             {/* Native Audio Element for functionality */}
-                            <audio controls className="w-full max-w-md mb-4 accent-primary">
-                                <source src="https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3" type="audio/mpeg" />
+                            <audio ref={audioRef} controls className="w-full max-w-md mb-4 accent-primary">
+                                <source src={selectedChallenge.songUrl} type="audio/webm" />
+                                <source src={selectedChallenge.songUrl} type="audio/mpeg" />
                                 Your browser does not support the audio element.
                             </audio>
                         </div>

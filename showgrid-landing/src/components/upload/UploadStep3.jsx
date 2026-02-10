@@ -1,33 +1,60 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, Activity, Repeat, Lock } from 'lucide-react';
+import { Zap, Activity, Repeat, Lock, CheckCircle, Home, Shield } from 'lucide-react';
 
 const UploadStep3 = () => {
     const navigate = useNavigate();
+    const [showSuccess, setShowSuccess] = useState(false);
+
+    useEffect(() => {
+        // Show success message on mount
+        setShowSuccess(true);
+        // Hide after 5 seconds
+        const timer = setTimeout(() => setShowSuccess(false), 5000);
+        return () => clearTimeout(timer);
+    }, []);
 
     return (
-        <div className="min-h-screen bg-dark-lighter pt-24 pb-12 text-white">
+        <div className="min-h-screen bg-dark-lighter pt-24 pb-12 text-white relative">
+            {/* Success Notification */}
+            {showSuccess && (
+                <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 animate-bounce-in">
+                    <div className="bg-green-500/90 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 backdrop-blur-md border border-white/20">
+                        <CheckCircle size={24} className="fill-white text-green-500" />
+                        <div>
+                            <h4 className="font-bold text-lg">Video uploaded successfully!</h4>
+                            <p className="text-sm text-white/90">It's under review. Check back soon.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="container">
                 {/* Progress */}
                 <div className="max-w-6xl mx-auto mb-16">
                     <div className="flex justify-between text-xs font-bold tracking-widest text-white/60 mb-2">
                         <span>CREATOR ONBOARDING</span>
-                        <span className="text-primary">Step 3 of 3</span>
+                        <span className="text-primary">Step 3 of 3: Complete</span>
                     </div>
                     <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full w-full"></div>
+                        <div className="h-full bg-green-500 rounded-full w-full"></div>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 max-w-6xl mx-auto items-center">
                     <div className="order-2 lg:order-1">
-                        <h1 className="text-4xl md:text-5xl font-extrabold mb-6">Fair Play & Fame</h1>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-500 text-xs font-bold mb-6 border border-yellow-500/20">
+                            <Shield size={12} />
+                            PENDING REVIEW
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-extrabold mb-6">Submission Received!</h1>
                         <p className="text-white/60 text-lg mb-12 leading-relaxed">
-                            To keep the competition fierce and fair, every performance on ShowGrid is judged on three core pillars.
-                            Master these to climb the global leaderboard.
+                            Your video has been securely stored. Our team of judges is reviewing your performance against the three core pillars.
+                            <br /><br />
+                            Once approved, it will appear in the <strong>Discovered</strong> feed for the world to see.
                         </p>
 
-                        <div className="space-y-4 mb-12">
+                        <div className="space-y-4 mb-12 opacity-60 pointer-events-none">
                             <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-start gap-6">
                                 <div className="w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center text-primary shrink-0">
                                     <Zap size={24} />
@@ -57,16 +84,28 @@ const UploadStep3 = () => {
                             </div>
                         </div>
 
-                        <button className="btn btn-primary w-full py-4 text-lg justify-center mb-4 shadow-[0_4px_20px_rgba(236,72,153,0.4)] hover:shadow-[0_6px_25px_rgba(236,72,153,0.6)]">
-                            Let's Go: Upload Now →
-                        </button>
-                        <p className="text-center text-sm text-white/50 cursor-pointer hover:text-white transition-colors">Explore Dashboard First</p>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => navigate('/')}
+                                className="w-full btn btn-outline py-4 text-lg justify-center gap-2"
+                            >
+                                <Home size={18} /> Return Home
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="order-1 lg:order-2">
+                    <div className="order-1 lg:order-2 opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
                         {/* Dashboard Preview */}
                         <div className="bg-[#111] border border-white/10 rounded-3xl p-8 relative overflow-hidden">
-                            <div className="flex justify-between items-start mb-8">
+                            <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                                <div className="text-center">
+                                    <Lock size={48} className="mx-auto mb-4 text-white/30" />
+                                    <h3 className="text-xl font-bold mb-1">Locked</h3>
+                                    <p className="text-sm text-white/50">Analytics available after approval</p>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-between items-start mb-8 filter blur-sm">
                                 <div>
                                     <span className="text-[10px] font-bold tracking-widest text-white/40 uppercase block mb-1">PREVIEW</span>
                                     <h4 className="text-2xl font-bold">Studio Insights</h4>
@@ -78,7 +117,7 @@ const UploadStep3 = () => {
                                 </div>
                             </div>
 
-                            <div className="flex gap-4 mb-8">
+                            <div className="flex gap-4 mb-8 filter blur-sm">
                                 <div className="flex-1 bg-white/5 rounded-xl p-4">
                                     <span className="text-xs text-white/50 block mb-2">Total Views</span>
                                     <div className="text-2xl font-extrabold mb-2">12.4K</div>
@@ -93,12 +132,7 @@ const UploadStep3 = () => {
                                 </div>
                             </div>
 
-                            <div className="h-48 bg-white/5 rounded-2xl relative mb-8 flex items-end justify-between px-4 pb-0 overflow-hidden">
-                                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-10 flex items-center justify-center">
-                                    <button className="bg-primary text-white border-0 px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2">
-                                        <Lock size={14} /> Unlock after 1st Upload
-                                    </button>
-                                </div>
+                            <div className="h-48 bg-white/5 rounded-2xl relative mb-8 flex items-end justify-between px-4 pb-0 overflow-hidden filter blur-sm">
                                 <div className="w-full h-[60%] flex items-end gap-2">
                                     <div className="flex-1 bg-white/10 rounded-t h-[30%]"></div>
                                     <div className="flex-1 bg-white/10 rounded-t h-[50%]"></div>
@@ -110,7 +144,7 @@ const UploadStep3 = () => {
                                 </div>
                             </div>
 
-                            <div className="space-y-3">
+                            <div className="space-y-3 filter blur-sm">
                                 <div className="flex items-center gap-4 text-xs text-white/60">
                                     <span className="w-16">Energy</span>
                                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">

@@ -11,8 +11,8 @@ import SignUpPage from './components/SignUpPage';
 import UploadStep1 from './components/upload/UploadStep1';
 import UploadStep2 from './components/upload/UploadStep2';
 import UploadStep3 from './components/upload/UploadStep3';
-import AdminDashboard from './components/admin/AdminDashboard';
 import Discovered from './components/Discovered';
+import Challenges from './components/Challenges';
 
 const LandingPage = () => {
   return (
@@ -62,6 +62,7 @@ function App() {
           </>
         }
       />
+      <Route path="/challenges" element={<Challenges />} />
       {/* Discovered Page - Protected */}
       <Route
         path="/discovered"
@@ -69,19 +70,6 @@ function App() {
           <>
             <SignedIn>
               <Discovered />
-            </SignedIn>
-            <SignedOut>
-              <RedirectToSignIn />
-            </SignedOut>
-          </>
-        }
-      />
-      <Route
-        path="/dance-admin"
-        element={
-          <>
-            <SignedIn>
-              <AdminDashboard />
             </SignedIn>
             <SignedOut>
               <RedirectToSignIn />

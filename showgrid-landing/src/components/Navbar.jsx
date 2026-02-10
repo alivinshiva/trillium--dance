@@ -12,7 +12,7 @@ const Navbar = () => {
         </div>
 
         <div className="hidden md:flex gap-8">
-          <a href="#challenges" className="text-white/70 hover:text-white text-sm font-semibold tracking-wider transition-colors">CHALLENGES</a>
+          <Link to="/challenges" className="text-white/70 hover:text-white text-sm font-semibold tracking-wider transition-colors">CHALLENGES</Link>
           <a href="#leaderboard" className="text-white/70 hover:text-white text-sm font-semibold tracking-wider transition-colors">LEADERBOARD</a>
           <a href="#studios" className="text-white/70 hover:text-white text-sm font-semibold tracking-wider transition-colors">STUDIOS</a>
         </div>

@@ -144,51 +144,83 @@ const Discovered = () => {
                     </div>
 
                     <div className="space-y-4">
-                        <div>
-                            <div className="flex justify-between text-xs font-bold mb-1">
-                                <span className="text-white">ENERGY</span>
-                                <span className="text-primary">{ratings.energy.toFixed(1)}</span>
-                            </div>
-                            <input
-                                type="range"
-                                min="0"
-                                max="10"
-                                step="0.1"
-                                value={ratings.energy}
-                                onChange={(e) => handleRatingChange('energy', e.target.value)}
-                                className="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-primary hover:accent-pink-400 transition-all"
-                            />
-                        </div>
-                        <div>
-                            <div className="flex justify-between text-xs font-bold mb-1">
-                                <span className="text-white">CHOREO</span>
-                                <span className="text-secondary">{ratings.choreo.toFixed(1)}</span>
-                            </div>
-                            <input
-                                type="range"
-                                min="0"
-                                max="10"
-                                step="0.1"
-                                value={ratings.choreo}
-                                onChange={(e) => handleRatingChange('choreo', e.target.value)}
-                                className="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-secondary hover:accent-cyan-300 transition-all"
-                            />
-                        </div>
-                        <div>
-                            <div className="flex justify-between text-xs font-bold mb-1">
-                                <span className="text-white">SYNC</span>
-                                <span className="text-purple-400">{ratings.sync.toFixed(1)}</span>
-                            </div>
-                            <input
-                                type="range"
-                                min="0"
-                                max="10"
-                                step="0.1"
-                                value={ratings.sync}
-                                onChange={(e) => handleRatingChange('sync', e.target.value)}
-                                className="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-purple-500 hover:accent-purple-400 transition-all"
-                            />
-                        </div>
+                        {currentVideo.judgeTags && currentVideo.judgeTags.map((tag, index) => {
+                            // Use safe defaults for colors/keys if tags are dynamic
+                            const colors = ['text-primary', 'text-secondary', 'text-purple-400', 'text-yellow-400'];
+                            const accents = ['accent-primary', 'accent-secondary', 'accent-purple-500', 'accent-yellow-500'];
+                            // We map tags to state keys like tag0, tag1, etc. for simplicity in this demo
+                            const tagKey = `tag${index}`;
+                            const val = ratings[tagKey] || 5.0;
+
+                            return (
+                                <div key={index}>
+                                    <div className="flex justify-between text-xs font-bold mb-1">
+                                        <span className="text-white uppercase">{tag}</span>
+                                        <span className={colors[index % colors.length]}>{val.toFixed(1)}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="10"
+                                        step="0.1"
+                                        value={val}
+                                        onChange={(e) => handleRatingChange(tagKey, e.target.value)}
+                                        className={`w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer ${accents[index % accents.length]} hover:brightness-110 transition-all`}
+                                    />
+                                </div>
+                            );
+                        })}
+
+                        {/* Fallback if no tags (legacy videos) */}
+                        {!currentVideo.judgeTags && (
+                            <>
+                                <div>
+                                    <div className="flex justify-between text-xs font-bold mb-1">
+                                        <span className="text-white">ENERGY</span>
+                                        <span className="text-primary">{ratings.energy?.toFixed(1) || "5.0"}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="10"
+                                        step="0.1"
+                                        value={ratings.energy || 5.0}
+                                        onChange={(e) => handleRatingChange('energy', e.target.value)}
+                                        className="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-primary hover:accent-pink-400 transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <div className="flex justify-between text-xs font-bold mb-1">
+                                        <span className="text-white">CHOREO</span>
+                                        <span className="text-secondary">{ratings.choreo?.toFixed(1) || "5.0"}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="10"
+                                        step="0.1"
+                                        value={ratings.choreo || 5.0}
+                                        onChange={(e) => handleRatingChange('choreo', e.target.value)}
+                                        className="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-secondary hover:accent-cyan-300 transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <div className="flex justify-between text-xs font-bold mb-1">
+                                        <span className="text-white">SYNC</span>
+                                        <span className="text-purple-400">{ratings.sync?.toFixed(1) || "5.0"}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="10"
+                                        step="0.1"
+                                        value={ratings.sync || 5.0}
+                                        onChange={(e) => handleRatingChange('sync', e.target.value)}
+                                        className="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-purple-500 hover:accent-purple-400 transition-all"
+                                    />
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     <button className="w-full mt-6 btn btn-primary py-2 text-sm">

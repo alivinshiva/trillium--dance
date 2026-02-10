@@ -62,6 +62,21 @@ export const VideoProvider = ({ children }) => {
         setVideos(prev => [newVideo, ...prev]);
     };
 
+    const addChallenge = (challengeData) => {
+        const newChallenge = {
+            ...challengeData,
+            id: Date.now().toString(),
+            tags: challengeData.tags || ['Energy', 'Style', 'Creativity', 'Impact']
+        };
+        setChallenges(prev => [newChallenge, ...prev]);
+    };
+
+    const updateVideoStatus = (id, status) => {
+        setVideos(prev => prev.map(video =>
+            video.id === id ? { ...video, status } : video
+        ));
+    };
+
     const getApprovedVideos = () => videos.filter(v => v.status === 'approved');
     const getPendingVideos = () => videos.filter(v => v.status === 'pending');
 
@@ -69,9 +84,11 @@ export const VideoProvider = ({ children }) => {
         <VideoContext.Provider value={{
             videos,
             addVideo,
+            updateVideoStatus,
             getApprovedVideos,
             getPendingVideos,
             challenges,
+            addChallenge,
             selectedChallenge,
             setSelectedChallenge
         }}>
