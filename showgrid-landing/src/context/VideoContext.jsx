@@ -1,69 +1,88 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useUser } from '@clerk/clerk-react';
 
 const VideoContext = createContext();
 
 export const useVideo = () => useContext(VideoContext);
 
 export const VideoProvider = ({ children }) => {
-    // Initial state with a demo video
-    const [videos, setVideos] = useState(() => {
-        const saved = localStorage.getItem('showgrid_videos');
-        return saved ? JSON.parse(saved) : [
-            {
-                id: 'demo-1',
-                userId: 'showgrid-official',
-                userName: 'ShowGrid Official',
-                userAvatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop',
-                videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-group-of-dancers-performing-a-choreography-43034-large.mp4",
-                status: 'approved',
-                timestamp: new Date().toISOString(),
-                description: "Official Choreography Demo",
-                challengeId: 'demo-challenge',
-                judgeTags: ['Energy', 'Summer', 'Vibe', 'Flow']
-            }
-        ];
-    });
+    const { user } = useUser();
 
-    const [challenges, setChallenges] = useState(() => {
-        const saved = localStorage.getItem('showgrid_challenges');
-        return saved ? JSON.parse(saved) : [
-            {
-                id: 'demo-challenge',
-                title: 'Summer Vibes 2026',
-                songUrl: '/1.webm',
-                startDate: '2026-06-01',
-                endDate: '2026-08-31',
-                tags: ['Energy', 'Summer', 'Vibe', 'Flow'],
-                description: "Bring the heat with your best summer moves!"
-            }
-        ];
-    });
+    // Videos - Now fetched from Backend (Submissions)
+    const [videos, setVideos] = useState([]);
 
+    // Challenges - Now fetched from Backend
+    const [challenges, setChallenges] = useState([]);
     const [selectedChallenge, setSelectedChallenge] = useState(null);
 
-    // Persistence
-    React.useEffect(() => {
-        localStorage.setItem('showgrid_videos', JSON.stringify(videos));
-    }, [videos]);
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
-    React.useEffect(() => {
-        localStorage.setItem('showgrid_challenges', JSON.stringify(challenges));
-    }, [challenges]);
-
-    const addVideo = (videoData) => {
-        const newVideo = {
-            ...videoData,
-            id: Date.now().toString(),
-            status: 'pending', // Default status for new uploads
-            timestamp: new Date().toISOString(),
-            challengeId: selectedChallenge?.id || 'demo-challenge',
-            judgeTags: selectedChallenge?.tags || ['Energy', 'Style', 'Creativity', 'Impact']
+    // Fetch Challenges
+    useEffect(() => {
+        const fetchChallenges = async () => {
+            try {
+                const res = await fetch(`${API_URL}/challenges`);
+                if (!res.ok) throw new Error('Failed to fetch challenges');
+                const data = await res.json();
+                setChallenges(data);
+            } catch (err) {
+                console.error("Error fetching challenges:", err);
+            }
         };
-        setVideos(prev => [newVideo, ...prev]);
+        fetchChallenges();
+    }, []);
+
+    // Fetch Submissions
+    useEffect(() => {
+        const fetchVideos = async () => {
+            try {
+                const res = await fetch(`${API_URL}/submissions`);
+                if (!res.ok) throw new Error('Failed to fetch submissions');
+                const data = await res.json();
+                setVideos(data);
+            } catch (err) {
+                console.error("Error fetching videos:", err);
+            }
+        };
+        fetchVideos();
+
+        // Poll for updates
+        const interval = setInterval(fetchVideos, 10000);
+        return () => clearInterval(interval);
+    }, []);
+
+
+    // Add Video - Adjusted for FormData (Multipart)
+    const addVideo = async (formData) => {
+        try {
+            // Note: Content-Type header should NOT be set manually when sending FormData
+            // The browser sets it automatically with the boundary
+            const res = await fetch(`${API_URL}/submissions`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Failed to submit video');
+            }
+
+            const newVideo = await res.json();
+            setVideos(prev => [newVideo, ...prev]);
+            return newVideo;
+        } catch (err) {
+            console.error("Error submitting video:", err);
+            throw err; // Re-throw to handle in UI
+        }
     };
 
     const getApprovedVideos = () => videos.filter(v => v.status === 'approved');
     const getPendingVideos = () => videos.filter(v => v.status === 'pending');
+
+    const getUserVideos = () => {
+        if (!user) return [];
+        return videos.filter(v => v.userId === user.id);
+    };
 
     return (
         <VideoContext.Provider value={{
@@ -71,6 +90,7 @@ export const VideoProvider = ({ children }) => {
             addVideo,
             getApprovedVideos,
             getPendingVideos,
+            getUserVideos,
             challenges,
             selectedChallenge,
             setSelectedChallenge

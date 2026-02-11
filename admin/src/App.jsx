@@ -78,7 +78,7 @@ const App = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {pendingVideos.map((video) => (
-                <div key={video.id} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden flex flex-col">
+                <div key={video._id} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden flex flex-col">
                   {/* Video Preview */}
                   <div className="relative aspect-video bg-black group">
                     <video src={video.videoUrl} className="w-full h-full object-cover" controls />
@@ -103,13 +103,13 @@ const App = () => {
 
                     <div className="grid grid-cols-2 gap-3 mt-auto">
                       <button
-                        onClick={() => updateVideoStatus(video.id, 'rejected')}
+                        onClick={() => updateVideoStatus(video._id, 'rejected')}
                         className="flex items-center justify-center gap-2 py-2 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-colors font-semibold text-sm"
                       >
                         <X size={16} /> Revoke
                       </button>
                       <button
-                        onClick={() => updateVideoStatus(video.id, 'approved')}
+                        onClick={() => updateVideoStatus(video._id, 'approved')}
                         className="flex items-center justify-center gap-2 py-2 rounded-lg bg-green-500/20 text-green-500 hover:bg-green-500/30 transition-colors font-semibold text-sm"
                       >
                         <Check size={16} /> Approve

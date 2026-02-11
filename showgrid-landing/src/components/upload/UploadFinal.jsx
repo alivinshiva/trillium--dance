@@ -55,43 +55,44 @@ const UploadFinal = () => {
         if (!file || !studioName || !city || !agreed) return;
 
         setUploading(true);
-        // Simulate upload progress
-        const interval = setInterval(() => {
-            setUploadProgress(prev => {
-                if (prev >= 100) {
-                    clearInterval(interval);
-                    completeUpload();
-                    return 100;
-                }
-                return prev + 5;
-            });
-        }, 100);
-    };
+        setUploadProgress(10); // Start progress
 
-    const completeUpload = () => {
-        const videoData = {
-            id: Date.now().toString(),
-            userId: user.id,
-            userName: studioName, // Using Studio Name as the display name
-            userAvatar: user.imageUrl,
-            videoUrl: previewUrl,
-            description: `Performing from ${city}`,
-            city: city,
-            status: 'pending',
-            timestamp: new Date().toISOString()
-        };
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('userId', user.id || 'guest');
+            formData.append('userName', studioName);
+            formData.append('userAvatar', user.imageUrl || 'https://via.placeholder.com/150');
+            formData.append('description', `Performing from ${city}`);
+            formData.append('city', city);
+            formData.append('challengeId', 'demo-challenge'); // TODO: Get actual challenge ID
 
-        addVideo(videoData);
-        setTimeout(() => {
+            // TODO: Implement real progress tracking if possible, 
+            // for now we just show processing state since fetch doesn't support progress events easily.
+            // Alternatively, could use XMLHttpRequest for progress like before but send to backend.
+
+            // Simulating progress for UX since we can't easily track fetch upload progress
+            const interval = setInterval(() => {
+                setUploadProgress(prev => Math.min(prev + 10, 90));
+            }, 500);
+
+            await addVideo(formData);
+
+            clearInterval(interval);
+            setUploadProgress(100);
             setUploading(false);
-            // Navigate to a success page or back to dashboard
-            // For now, let's go to profile or a success state within this component?
-            // The plan mentioned "Success/Redirect". Let's assume Profile for now or we can make a Success component.
-            // Actually, existing Step 3 was "Success". But new Step 3 is Rules.
-            // Let's redirect to Profile for now, as that shows "My Videos".
             navigate('/profile');
-        }, 500);
+
+        } catch (error) {
+            console.error(error);
+            alert('Upload failed: ' + error.message);
+            setUploading(false);
+            setUploadProgress(0);
+        }
     };
+
+    // Removed separate completeUpload function as it's merged into handleSubmit
+
 
     return (
         <div className="min-h-screen bg-dark-lighter text-white">

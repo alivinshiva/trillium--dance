@@ -1,80 +1,107 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const VideoContext = createContext();
 
 export const useVideo = () => useContext(VideoContext);
 
 export const VideoProvider = ({ children }) => {
-    // Initial state with a demo video
-    const [videos, setVideos] = useState(() => {
-        const saved = localStorage.getItem('showgrid_videos');
-        return saved ? JSON.parse(saved) : [
-            {
-                id: 'demo-1',
-                userId: 'showgrid-official',
-                userName: 'ShowGrid Official',
-                userAvatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop',
-                videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-group-of-dancers-performing-a-choreography-43034-large.mp4",
-                status: 'approved',
-                timestamp: new Date().toISOString(),
-                description: "Official Choreography Demo",
-                challengeId: 'demo-challenge',
-                judgeTags: ['Energy', 'Summer', 'Vibe', 'Flow']
-            }
-        ];
-    });
+    // Videos (Submissions)
+    const [videos, setVideos] = useState([]);
 
-    const [challenges, setChallenges] = useState(() => {
-        const saved = localStorage.getItem('showgrid_challenges');
-        return saved ? JSON.parse(saved) : [
-            {
-                id: 'demo-challenge',
-                title: 'Summer Vibes 2026',
-                songUrl: '/1.webm',
-                startDate: '2026-06-01',
-                endDate: '2026-08-31',
-                tags: ['Energy', 'Summer', 'Vibe', 'Flow'],
-                description: "Bring the heat with your best summer moves!"
+    // Challenges
+    const [challenges, setChallenges] = useState([]);
+
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+    // Fetch Initial Data
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Fetch Challenges
+                const challengeRes = await fetch(`${API_URL}/challenges`);
+                if (challengeRes.ok) setChallenges(await challengeRes.json());
+
+                // Fetch Submissions
+                const submissionRes = await fetch(`${API_URL}/submissions`);
+                if (submissionRes.ok) setVideos(await submissionRes.json());
+
+            } catch (err) {
+                console.error("Error fetching data:", err);
             }
-        ];
-    });
+        };
+        fetchData();
+
+        // Poll for new submissions every 5 seconds
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`${API_URL}/submissions`);
+                if (res.ok) setVideos(await res.json());
+            } catch (err) {
+                console.error("Error polling submissions:", err);
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     const [selectedChallenge, setSelectedChallenge] = useState(null);
 
-    // Persistence
-    React.useEffect(() => {
-        localStorage.setItem('showgrid_videos', JSON.stringify(videos));
-    }, [videos]);
+    // Add Challenge - POST to Backend
+    const addChallenge = async (challengeData) => {
+        try {
+            const res = await fetch(`${API_URL}/challenges`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(challengeData)
+            });
 
-    React.useEffect(() => {
-        localStorage.setItem('showgrid_challenges', JSON.stringify(challenges));
-    }, [challenges]);
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Failed to create challenge');
+            }
 
-    const addVideo = (videoData) => {
-        const newVideo = {
-            ...videoData,
-            id: Date.now().toString(),
-            status: 'pending', // Default status for new uploads
-            timestamp: new Date().toISOString(),
-            challengeId: selectedChallenge?.id || 'demo-challenge',
-            judgeTags: selectedChallenge?.tags || ['Energy', 'Style', 'Creativity', 'Impact']
-        };
-        setVideos(prev => [newVideo, ...prev]);
+            const newChallenge = await res.json();
+            setChallenges(prev => [newChallenge, ...prev]);
+            return newChallenge;
+        } catch (err) {
+            console.error("Error adding challenge:", err);
+            alert(`Error: ${err.message}`);
+        }
     };
 
-    const addChallenge = (challengeData) => {
-        const newChallenge = {
-            ...challengeData,
-            id: Date.now().toString(),
-            tags: challengeData.tags || ['Energy', 'Style', 'Creativity', 'Impact']
-        };
-        setChallenges(prev => [newChallenge, ...prev]);
-    };
+    // Update Video Status - PATCH to Backend
+    const updateVideoStatus = async (id, status) => {
+        try {
+            const res = await fetch(`${API_URL}/submissions/${id}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status })
+            });
 
-    const updateVideoStatus = (id, status) => {
-        setVideos(prev => prev.map(video =>
-            video.id === id ? { ...video, status } : video
-        ));
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Failed to update status');
+            }
+
+            // Optimistic update locally
+            setVideos(prev => prev.map(video =>
+                video._id === id ? { ...video, status } : video
+            ));
+
+            // Also refresh from server to be sure
+            const updatedVideo = await res.json();
+            setVideos(prev => prev.map(video =>
+                video._id === id ? updatedVideo : video
+            ));
+
+        } catch (err) {
+            console.error("Error updating status:", err);
+            alert(`Error: ${err.message}`);
+        }
     };
 
     const getApprovedVideos = () => videos.filter(v => v.status === 'approved');
@@ -83,7 +110,7 @@ export const VideoProvider = ({ children }) => {
     return (
         <VideoContext.Provider value={{
             videos,
-            addVideo,
+            // addVideo, // Admin doesn't add videos
             updateVideoStatus,
             getApprovedVideos,
             getPendingVideos,
