@@ -26,7 +26,7 @@ const Footer = () => {
                 </div>
 
                 <div className="text-center text-white/30 text-xs tracking-wider uppercase">
-                    <p>© 2024 ShowGrid India. All rights reserved. Crafted for the creators of tomorrow.</p>
+                    <p>© 2026 ShowGrid India. All rights reserved. Crafted for the creators of tomorrow.</p>
                 </div>
             </div>
         </footer>

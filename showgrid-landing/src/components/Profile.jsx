@@ -1,0 +1,261 @@
+import { Link } from 'react-router-dom';
+import { useUser, SignOutButton } from '@clerk/clerk-react';
+import {
+    Home, Trophy, BarChart2, User, Settings, Edit, MapPin, Zap,
+    LogOut, ChevronRight, Star, ExternalLink
+} from 'lucide-react';
+
+const Profile = () => {
+    const { user, isLoaded } = useUser();
+
+    if (!isLoaded) {
+        return (
+            <div className="min-h-screen bg-black flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return (
+            <div className="min-h-screen bg-black flex items-center justify-center text-white">
+                <p>Please sign in to view your profile.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-black text-white flex">
+            {/* Sidebar */}
+            <aside className="w-64 border-r border-white/10 hidden md:flex flex-col p-6 fixed h-full bg-black z-10">
+                <Link to="/" className="flex items-center gap-2 font-bold text-xl mb-12 hover:opacity-80 transition-opacity">
+                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                        <div className="w-3 h-3 bg-white rounded-sm grid grid-cols-2 gap-0.5">
+                            <div className="bg-transparent"></div>
+                            <div className="bg-primary"></div>
+                            <div className="bg-primary"></div>
+                            <div className="bg-transparent"></div>
+                        </div>
+                    </div>
+                    <span>SHOWGRID</span>
+                </Link>
+
+                <nav className="flex-1 space-y-2">
+                    <Link to="/discovered" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
+                        <Home size={20} /> Feed
+                    </Link>
+                    <Link to="/challenges" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
+                        <Trophy size={20} /> Challenges
+                    </Link>
+                    <Link to="/leaderboard" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
+                        <BarChart2 size={20} /> Leaderboard
+                    </Link>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-white/10 text-white rounded-xl font-bold cursor-default">
+                        <User size={20} className="text-primary" /> My Profile
+                    </div>
+                    <a href="#settings" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
+                        <Settings size={20} /> Settings
+                    </a>
+                </nav>
+
+                <SignOutButton>
+                    <button className="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors mt-auto w-full">
+                        <LogOut size={20} /> Sign Out
+                    </button>
+                </SignOutButton>
+            </aside>
+
+            {/* Main Content */}
+            <main className="flex-1 md:ml-64 p-6 md:p-12 max-w-7xl mx-auto">
+                {/* Header Card */}
+                <div className="bg-[#111] border border-white/10 rounded-3xl p-8 mb-8 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                        <div className="w-64 h-64 bg-primary/20 rounded-full blur-3xl"></div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row gap-8 items-start md:items-center justify-between relative z-10">
+                        <div className="flex items-center gap-6">
+                            <div className="relative">
+                                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full p-1 bg-gradient-to-br from-primary to-purple-600">
+                                    <img
+                                        src={user.imageUrl}
+                                        alt={user.fullName}
+                                        className="w-full h-full rounded-full object-cover border-4 border-[#111]"
+                                    />
+                                </div>
+                                <div className="absolute -bottom-2 -right-2 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full border-4 border-[#111] flex items-center gap-1">
+                                    <Zap size={12} fill="white" /> LVL 12
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="flex items-center gap-3 mb-1">
+                                    <h1 className="text-3xl md:text-4xl font-bold">{user.fullName}</h1>
+                                    <span className="bg-purple-500/20 text-purple-400 text-[10px] font-bold px-2 py-0.5 rounded border border-purple-500/30 uppercase tracking-wide">
+                                        Super Fan
+                                    </span>
+                                </div>
+                                <p className="text-white/60 mb-2">Digital Contributor • Member since {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
+                                <div className="flex items-center gap-4 text-sm text-white/40">
+                                    <span className="flex items-center gap-1"><MapPin size={14} /> Mumbai, IN</span>
+                                    <span className="flex items-center gap-1"><Zap size={14} className="text-yellow-500" /> 450 Impact Points</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors font-semibold">
+                            <Edit size={16} /> Edit Profile
+                        </button>
+                    </div>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    {/* Stat I */}
+                    <div className="bg-[#111] border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:border-white/20 transition-colors">
+                        <div className="absolute right-4 bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <Star size={80} />
+                        </div>
+                        <h3 className="text-xs font-bold text-white/40 tracking-widest uppercase mb-2">Performances Rated</h3>
+                        <div className="text-5xl font-extrabold mb-2">128</div>
+                        <div className="text-green-400 text-xs font-bold flex items-center gap-1">
+                            <ChevronRight size={12} className="-rotate-45" /> +12 this week
+                        </div>
+                    </div>
+
+                    {/* Stat II */}
+                    <div className="bg-[#111] border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:border-white/20 transition-colors">
+                        <div className="absolute right-4 bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <Trophy size={80} />
+                        </div>
+                        <h3 className="text-xs font-bold text-white/40 tracking-widest uppercase mb-2">Correct Predictions</h3>
+                        <div className="text-5xl font-extrabold mb-2">42</div>
+                        <div className="text-primary text-xs font-bold flex items-center gap-1">
+                            <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div> Top 5% of fans
+                        </div>
+                    </div>
+
+                    {/* Stat III */}
+                    <div className="bg-[#111] border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:border-white/20 transition-colors">
+                        <div className="absolute right-4 bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <MapPin size={80} />
+                        </div>
+                        <h3 className="text-xs font-bold text-white/40 tracking-widest uppercase mb-2">Cities Supported</h3>
+                        <div className="text-5xl font-extrabold mb-2">05</div>
+                        <div className="text-white/40 text-xs font-bold">
+                            Across 3 regions
+                        </div>
+                    </div>
+                </div>
+
+                {/* City Pride */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <div className="lg:col-span-3 bg-[#111] border border-white/10 rounded-3xl p-8 relative overflow-hidden">
+                        <div className="flex items-center gap-2 mb-8">
+                            <MapPin className="text-primary" size={20} />
+                            <h2 className="text-xl font-bold">City Pride</h2>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-12 items-center">
+                            <div className="flex-1 w-full">
+                                <div className="text-xs font-bold text-white/40 tracking-widest uppercase mb-2">YOUR HOME CITY</div>
+                                <div className="text-4xl md:text-5xl font-extrabold mb-8">
+                                    Mumbai <span className="text-white/20 mx-2">•</span> <span className="text-primary">Rank #2</span>
+                                </div>
+
+                                <div className="flex justify-between items-end mb-2">
+                                    <span className="text-sm font-bold text-white/60">Contribution to Rank #1</span>
+                                    <span className="text-2xl font-bold text-white">78%</span>
+                                </div>
+                                <div className="h-4 bg-white/5 rounded-full overflow-hidden mb-4">
+                                    <div className="h-full bg-gradient-to-r from-primary to-purple-600 w-[78%] rounded-full relative">
+                                        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/diagonal-stripes.png')] opacity-20"></div>
+                                    </div>
+                                </div>
+                                <p className="text-white/40 text-sm italic mb-8">"You've contributed 450 points to your city's standing."</p>
+
+                                <button className="btn btn-outline border-white/10 bg-white/5 hover:bg-white/10 text-xs px-6 py-3 tracking-widest">
+                                    VIEW NATIONAL LEADERBOARD
+                                </button>
+                            </div>
+
+                            <div className="relative w-full md:w-80 h-48 bg-[#1a0b14] rounded-2xl overflow-hidden border border-white/5 group">
+                                <img
+                                    src="https://images.unsplash.com/photo-1566552881560-0be862a7c445?q=80&w=1000&auto=format&fit=crop"
+                                    alt="Mumbai Map"
+                                    className="w-full h-full object-cover opacity-40 group-hover:scale-110 transition-transform duration-700"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                                    <div className="bg-white/10 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-[10px] font-bold text-white shadow-xl">
+                                        IMPACT ZONE A
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Recently Rated */}
+                <div className="mb-8">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-2">
+                            <div className="w-1 h-6 bg-primary rounded-full"></div>
+                            <h2 className="text-xl font-bold">Recently Rated</h2>
+                        </div>
+                        <button className="text-xs font-bold text-primary hover:text-white transition-colors">
+                            View All History
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {[
+                            { name: 'Velocity Dance Studio', type: 'Bolly-Hop Fusion • Delhi', score: '9.2', img: 'https://images.unsplash.com/photo-1516475429286-465d815a0df4?w=500&h=300&fit=crop' },
+                            { name: 'Street Kings Hub', type: 'Underground HipHop • Pune', score: '8.5', img: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=500&h=300&fit=crop' },
+                            { name: 'Classical Vibes Acad.', type: 'Contemporary Kathak • Bengaluru', score: '10', img: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&h=300&fit=crop' },
+                            { name: 'The Groovers Crew', type: 'Lyrical Dance • Kolkata', score: '—', img: 'https://images.unsplash.com/photo-1535525266638-c5f718b533ce?w=500&h=300&fit=crop' },
+                        ].map((item, i) => (
+                            <div key={i} className="bg-[#111] border border-white/10 rounded-xl overflow-hidden group cursor-pointer hover:-translate-y-1 transition-transform">
+                                <div className="h-32 relative">
+                                    <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
+                                    <div className="absolute top-2 right-2 bg-primary text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg">
+                                        {item.score}/10
+                                    </div>
+                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
+                                </div>
+                                <div className="p-4">
+                                    <h4 className="font-bold text-sm mb-1 truncate">{item.name}</h4>
+                                    <p className="text-[10px] text-white/50 mb-4 truncate">{item.type}</p>
+                                    <div className="flex items-center justify-between text-[10px] text-white/30 font-bold uppercase tracking-wider">
+                                        <span>{i === 0 ? '2 days ago' : i === 1 ? '4 days ago' : '1 week ago'}</span>
+                                        <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform text-white/60" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </main>
+        </div>
+    );
+};
+
+// Simple arrow component for reuse within the file
+const ArrowRight = ({ size = 16, className = "" }) => (
+    <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={className}
+    >
+        <path d="M5 12h14" />
+        <path d="m12 5 7 7-7 7" />
+    </svg>
+);
+
+export default Profile;

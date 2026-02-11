@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Play, Upload, MessageSquare } from 'lucide-react';
+import { Play, Upload, MessageSquare, TrendingUp } from 'lucide-react';
 import heroBg from '../assets/hero-bg.png';
 
 const Hero = () => {
@@ -32,8 +32,8 @@ const Hero = () => {
                     <Link to="/discovered" className="btn btn-primary">
                         <Play size={20} fill="currentColor" /> Watch & Rate
                     </Link>
-                    <Link to="/upload" className="btn btn-outline">
-                        <Upload size={20} /> Studio Upload
+                    <Link to="/challenges" className="btn btn-outline">
+                        <TrendingUp size={20} /> Trending Challenge
                     </Link>
                 </div>
 

@@ -1,32 +1,31 @@
-// React import removed from here as it is imported below
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
-import { Music, Video, Trophy, ChevronRight, Play, Calendar, Users, ArrowRight } from 'lucide-react';
+import { Music, Video, Trophy, ChevronRight } from 'lucide-react';
 import { useVideo } from '../../context/VideoContext';
+import Navbar from '../Navbar';
 
 const UploadStep1 = () => {
     const { isSignedIn } = useUser();
     const navigate = useNavigate();
-    const { challenges, setSelectedChallenge } = useVideo();
+    const { selectedChallenge } = useVideo();
 
-    const handleJoinChallenge = (challenge) => {
-        if (!isSignedIn) {
-            navigate('/sign-up');
-            return;
+    const handleNext = () => {
+        if (selectedChallenge) {
+            navigate('/upload/step-2');
+        } else {
+            navigate('/challenges');
         }
-        setSelectedChallenge(challenge);
-        navigate('/upload/step-2');
     };
 
     return (
-        <div className="min-h-screen bg-dark-lighter bg-gradient-to-b from-dark-lighter to-[#050505] pt-24 pb-12 text-white text-center">
-            <div className="container">
+        <div className="min-h-screen bg-dark-lighter bg-gradient-to-b from-dark-lighter to-[#050505] pt-0 pb-12 text-white text-center relative">
+            <Navbar />
+            <div className="pt-24 container">
                 {/* Progress */}
-                <div className="max-w-xl mx-auto mb-12">
+                <div className="max-w-xl mx-auto mb-16">
                     <div className="flex justify-between text-xs font-bold tracking-widest text-white/60 mb-2">
-                        <span>ONBOARDING PROGRESS </span>
+                        <span>ONBOARDING PROGRESS</span>
                         <span className="text-primary">1 of 3</span>
                     </div>
                     <div className="h-1 bg-white/10 rounded-full overflow-hidden">
@@ -37,64 +36,43 @@ const UploadStep1 = () => {
                 {/* Content */}
                 <div>
                     <h1 className="text-5xl md:text-6xl font-extrabold leading-none mb-4">
-                        CHOOSE YOUR<br />
-                        <span className="text-primary">BATTLEFIELD</span>
+                        READY TO TAKE<br />
+                        <span className="text-primary">THE GRID?</span>
                     </h1>
                     <p className="text-lg text-white/70 max-w-lg mx-auto mb-12">
-                        Select an active challenge to join. Your performance will be judged on the specific criteria for each track.
+                        Join India's biggest dance challenge and transform your moves into fame.
                     </p>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto mb-16 text-left">
-                        {challenges.map((challenge, index) => (
-                            <div key={challenge.id} className="group bg-white/5 border border-white/5 p-1 rounded-3xl transition-all hover:-translate-y-2 hover:bg-white/10 hover:border-primary/50 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                    <Trophy size={120} className="rotate-12" />
-                                </div>
-
-                                <div className="p-8 h-full flex flex-col relative z-10">
-                                    <div className="flex justify-between items-start mb-6">
-                                        <div className="w-12 h-12 bg-gradient-to-br from-primary to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
-                                            <Music size={24} className="text-white" />
-                                        </div>
-                                        <span className="bg-white/10 text-white/80 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                                            Active
-                                        </span>
-                                    </div>
-
-                                    <h3 className="text-2xl font-bold mb-2 group-hover:text-primary transition-colors">{challenge.title}</h3>
-                                    <p className="text-sm text-white/60 leading-relaxed mb-6 line-clamp-3">
-                                        {challenge.description}
-                                    </p>
-
-                                    <div className="flex flex-wrap gap-2 mb-8">
-                                        {challenge.tags.map((tag, i) => (
-                                            <span key={i} className="text-[10px] font-bold bg-black/30 border border-white/10 px-2 py-1 rounded text-white/70">
-                                                #{tag}
-                                            </span>
-                                        ))}
-                                    </div>
-
-                                    <div className="mt-auto pt-6 border-t border-white/10 flex items-center justify-between">
-                                        <div className="text-xs text-white/40 font-mono">
-                                            Ends {new Date(challenge.endDate).toLocaleDateString()}
-                                        </div>
-                                        <button
-                                            onClick={() => handleJoinChallenge(challenge)}
-                                            className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all transform group-hover:scale-110"
-                                        >
-                                            <ArrowRight size={20} />
-                                        </button>
-                                    </div>
-                                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-16 text-left">
+                        <div className="bg-white/5 border border-white/5 p-8 rounded-2xl transition-transform hover:-translate-y-1 hover:bg-white/10">
+                            <div className="w-10 h-10 bg-primary/20 text-primary rounded-lg flex items-center justify-center mb-4">
+                                <Music size={24} />
                             </div>
-                        ))}
+                            <h3 className="text-lg font-bold mb-2">1. Download the Hook</h3>
+                            <p className="text-sm text-white/60 leading-relaxed">Grab the official track and feel the rhythm.</p>
+                        </div>
+                        <div className="bg-white/5 border border-white/5 p-8 rounded-2xl transition-transform hover:-translate-y-1 hover:bg-white/10">
+                            <div className="w-10 h-10 bg-primary/20 text-primary rounded-lg flex items-center justify-center mb-4">
+                                <Video size={24} />
+                            </div>
+                            <h3 className="text-lg font-bold mb-2">2. Record your move</h3>
+                            <p className="text-sm text-white/60 leading-relaxed">Show us your unique style on the floor.</p>
+                        </div>
+                        <div className="bg-white/5 border border-white/5 p-8 rounded-2xl transition-transform hover:-translate-y-1 hover:bg-white/10">
+                            <div className="w-10 h-10 bg-primary/20 text-primary rounded-lg flex items-center justify-center mb-4">
+                                <Trophy size={24} />
+                            </div>
+                            <h3 className="text-lg font-bold mb-2">3. Upload & Win</h3>
+                            <p className="text-sm text-white/60 leading-relaxed">Get rated by the community and climb the ranks.</p>
+                        </div>
                     </div>
 
-                    {!isSignedIn && (
-                        <div className="text-white/40 text-sm">
-                            <Link to="/sign-in" className="underline hover:text-white">Sign in</Link> to save your progress
-                        </div>
-                    )}
+                    <div className="flex flex-col items-center gap-4">
+                        <button className="btn btn-primary px-12 py-3 text-lg uppercase tracking-widest" onClick={handleNext}>
+                            NEXT <ChevronRight size={20} />
+                        </button>
+                        <div className="text-[10px] tracking-[0.2em] opacity-30 uppercase font-bold">VARIANT 1 OF 3</div>
+                    </div>
                 </div>
             </div>
         </div>

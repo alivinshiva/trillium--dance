@@ -11,8 +11,11 @@ import SignUpPage from './components/SignUpPage';
 import UploadStep1 from './components/upload/UploadStep1';
 import UploadStep2 from './components/upload/UploadStep2';
 import UploadStep3 from './components/upload/UploadStep3';
+import UploadFinal from './components/upload/UploadFinal';
 import Discovered from './components/Discovered';
 import Challenges from './components/Challenges';
+import Leaderboard from './components/Leaderboard';
+import Profile from './components/Profile';
 
 const LandingPage = () => {
   return (
@@ -62,7 +65,21 @@ function App() {
           </>
         }
       />
+      <Route
+        path="/upload/step-4"
+        element={
+          <>
+            <SignedIn>
+              <UploadFinal />
+            </SignedIn>
+            <SignedOut>
+              <RedirectToSignIn />
+            </SignedOut>
+          </>
+        }
+      />
       <Route path="/challenges" element={<Challenges />} />
+      <Route path="/leaderboard" element={<Leaderboard />} />
       {/* Discovered Page - Protected */}
       <Route
         path="/discovered"
@@ -70,6 +87,19 @@ function App() {
           <>
             <SignedIn>
               <Discovered />
+            </SignedIn>
+            <SignedOut>
+              <RedirectToSignIn />
+            </SignedOut>
+          </>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <>
+            <SignedIn>
+              <Profile />
             </SignedIn>
             <SignedOut>
               <RedirectToSignIn />

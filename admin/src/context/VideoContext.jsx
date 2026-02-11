@@ -29,10 +29,10 @@ export const VideoProvider = ({ children }) => {
         return saved ? JSON.parse(saved) : [
             {
                 id: 'demo-challenge',
-                title: 'Summer Vibes 2024',
+                title: 'Summer Vibes 2026',
                 songUrl: '/1.webm',
-                startDate: '2024-06-01',
-                endDate: '2024-08-31',
+                startDate: '2026-06-01',
+                endDate: '2026-08-31',
                 tags: ['Energy', 'Summer', 'Vibe', 'Flow'],
                 description: "Bring the heat with your best summer moves!"
             }

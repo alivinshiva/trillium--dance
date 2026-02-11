@@ -17,7 +17,7 @@ const Challenges = () => {
             return;
         }
         setSelectedChallenge(challenge);
-        navigate('/upload/step-2');
+        navigate('/upload');
     };
 
     return (
