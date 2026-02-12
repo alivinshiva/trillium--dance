@@ -16,6 +16,7 @@ import Discovered from './components/Discovered';
 import Challenges from './components/Challenges';
 import Leaderboard from './components/Leaderboard';
 import Profile from './components/Profile';
+import Dashboard from './components/Dashboard';
 
 const LandingPage = () => {
   return (
@@ -100,6 +101,19 @@ function App() {
           <>
             <SignedIn>
               <Profile />
+            </SignedIn>
+            <SignedOut>
+              <RedirectToSignIn />
+            </SignedOut>
+          </>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <>
+            <SignedIn>
+              <Dashboard />
             </SignedIn>
             <SignedOut>
               <RedirectToSignIn />

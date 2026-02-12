@@ -44,7 +44,7 @@ const Challenges = () => {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {challenges.map((challenge) => (
-                                <div key={challenge.id} className="group bg-white/5 border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 hover:border-primary/50 transition-all duration-300 hover:-translate-y-2 flex flex-col">
+                                <div key={challenge._id} className="group bg-white/5 border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 hover:border-primary/50 transition-all duration-300 hover:-translate-y-2 flex flex-col">
                                     <div className="p-8 flex-grow relative">
                                         <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
                                             <Trophy size={140} className="rotate-12" />

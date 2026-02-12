@@ -4,6 +4,7 @@ import {
     Home, Trophy, BarChart2, User, Settings, Edit, MapPin, Zap,
     LogOut, ChevronRight, Star, ExternalLink
 } from 'lucide-react';
+import Navbar from './Navbar';
 
 const Profile = () => {
     const { user, isLoaded } = useUser();
@@ -47,6 +48,9 @@ const Profile = () => {
                     <Link to="/challenges" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
                         <Trophy size={20} /> Challenges
                     </Link>
+                    <Link to="/dashboard" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
+                        <Zap size={20} /> Dashboard
+                    </Link>
                     <Link to="/leaderboard" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
                         <BarChart2 size={20} /> Leaderboard
                     </Link>
@@ -66,45 +70,45 @@ const Profile = () => {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 md:ml-64 p-6 md:p-12 max-w-7xl mx-auto">
+            <main className="flex-1 md:ml-64 p-6 pt-24 md:p-12 max-w-7xl mx-auto">
                 {/* Header Card */}
-                <div className="bg-[#111] border border-white/10 rounded-3xl p-8 mb-8 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                <div className="md:bg-[#111] md:border md:border-white/10 md:rounded-3xl md:p-8 mb-8 relative overflow-visible md:overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none hidden md:block">
                         <div className="w-64 h-64 bg-primary/20 rounded-full blur-3xl"></div>
                     </div>
 
-                    <div className="flex flex-col md:flex-row gap-8 items-start md:items-center justify-between relative z-10">
-                        <div className="flex items-center gap-6">
+                    <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-start md:items-center justify-between relative z-10">
+                        <div className="flex items-center gap-4 md:gap-6">
                             <div className="relative">
-                                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full p-1 bg-gradient-to-br from-primary to-purple-600">
+                                <div className="w-20 h-20 md:w-32 md:h-32 rounded-full p-1 bg-gradient-to-br from-primary to-purple-600">
                                     <img
                                         src={user.imageUrl}
                                         alt={user.fullName}
                                         className="w-full h-full rounded-full object-cover border-4 border-[#111]"
                                     />
                                 </div>
-                                <div className="absolute -bottom-2 -right-2 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full border-4 border-[#111] flex items-center gap-1">
-                                    <Zap size={12} fill="white" /> LVL 12
+                                <div className="absolute -bottom-2 -right-2 bg-primary text-white text-[10px] md:text-xs font-bold px-2 md:px-3 py-1 rounded-full border-4 border-[#111] flex items-center gap-1">
+                                    <Zap size={10} fill="white" className="md:w-3 md:h-3" /> LVL 12
                                 </div>
                             </div>
 
                             <div>
-                                <div className="flex items-center gap-3 mb-1">
-                                    <h1 className="text-3xl md:text-4xl font-bold">{user.fullName}</h1>
+                                <div className="flex items-center gap-2 md:gap-3 mb-1">
+                                    <h1 className="text-2xl md:text-4xl font-bold">{user.fullName}</h1>
                                     <span className="bg-purple-500/20 text-purple-400 text-[10px] font-bold px-2 py-0.5 rounded border border-purple-500/30 uppercase tracking-wide">
                                         Super Fan
                                     </span>
                                 </div>
-                                <p className="text-white/60 mb-2">Digital Contributor • Member since {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
-                                <div className="flex items-center gap-4 text-sm text-white/40">
-                                    <span className="flex items-center gap-1"><MapPin size={14} /> Mumbai, IN</span>
-                                    <span className="flex items-center gap-1"><Zap size={14} className="text-yellow-500" /> 450 Impact Points</span>
+                                <p className="text-white/60 text-xs md:text-base mb-2">Digital Contributor • Member since {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
+                                <div className="flex items-center gap-3 md:gap-4 text-xs md:text-sm text-white/40">
+                                    <span className="flex items-center gap-1"><MapPin size={12} className="md:w-3.5 md:h-3.5" /> Mumbai, IN</span>
+                                    <span className="flex items-center gap-1"><Zap size={12} className="text-yellow-500 md:w-3.5 md:h-3.5" /> 450 Impact Points</span>
                                 </div>
                             </div>
                         </div>
 
-                        <button className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors font-semibold">
-                            <Edit size={16} /> Edit Profile
+                        <button className="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors font-semibold text-xs md:text-base w-full md:w-auto justify-center">
+                            <Edit size={14} className="md:w-4 md:h-4" /> Edit Profile
                         </button>
                     </div>
                 </div>
@@ -235,10 +239,14 @@ const Profile = () => {
                         ))}
                     </div>
                 </div>
+
+                {/* Navigation Overlay */}
+                <Navbar />
             </main>
         </div>
     );
 };
+
 
 // Simple arrow component for reuse within the file
 const ArrowRight = ({ size = 16, className = "" }) => (
