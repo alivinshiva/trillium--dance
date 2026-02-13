@@ -27,6 +27,11 @@ const challengeSchema = new mongoose.Schema({
         type: [String],
         default: []
     },
+    presetComments: {
+        positive: [String],
+        neutral: [String],
+        negative: [String]
+    },
     createdAt: {
         type: Date,
         default: Date.now

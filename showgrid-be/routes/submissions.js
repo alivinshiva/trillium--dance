@@ -45,4 +45,31 @@ router.post('/', upload.single('file'), async (req, res) => {
     }
 });
 
+// POST a comment to a submission
+router.post('/:id/comments', async (req, res) => {
+    try {
+        const { userId, userName, userAvatar, text, type } = req.body;
+        const submission = await Submission.findById(req.params.id);
+
+        if (!submission) {
+            return res.status(404).json({ message: 'Submission not found' });
+        }
+
+        submission.comments.push({
+            userId,
+            userName,
+            userAvatar,
+            text,
+            type,
+            createdAt: new Date()
+        });
+
+        await submission.save();
+        res.json(submission);
+    } catch (err) {
+        console.error("Error adding comment:", err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
 module.exports = router;

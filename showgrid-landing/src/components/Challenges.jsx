@@ -44,11 +44,24 @@ const Challenges = () => {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {challenges.map((challenge) => (
-                                <div key={challenge._id} className="group bg-white/5 border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 hover:border-primary/50 transition-all duration-300 hover:-translate-y-2 flex flex-col">
-                                    <div className="p-8 flex-grow relative">
-                                        <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <div key={challenge._id} className="group bg-white/5 border border-white/10 rounded-3xl overflow-hidden hover:border-primary/50 transition-all duration-300 hover:-translate-y-2 flex flex-col relative">
+                                    {/* Banner Image Background */}
+                                    {challenge.coverUrl ? (
+                                        <>
+                                            <img
+                                                src={challenge.coverUrl}
+                                                alt={challenge.title}
+                                                className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity duration-500"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-[#000] via-black/80 to-transparent/50" />
+                                        </>
+                                    ) : (
+                                        <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
                                             <Trophy size={140} className="rotate-12" />
                                         </div>
+                                    )}
+
+                                    <div className="p-8 flex-grow relative z-10">
 
                                         <div className="flex justify-between items-start mb-6 relative z-10">
                                             <div className="w-14 h-14 bg-gradient-to-br from-primary to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
@@ -73,7 +86,7 @@ const Challenges = () => {
                                         </div>
                                     </div>
 
-                                    <div className="p-6 bg-black/20 border-t border-white/5 flex items-center justify-between">
+                                    <div className="p-6 bg-black/20 border-t border-white/5 flex items-center justify-between relative z-10">
                                         <div className="flex items-center gap-2 text-xs text-white/40 font-mono">
                                             <Calendar size={14} />
                                             <span>Ends {new Date(challenge.endDate).toLocaleDateString()}</span>

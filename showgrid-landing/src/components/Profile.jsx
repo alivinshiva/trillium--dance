@@ -2,12 +2,15 @@ import { Link } from 'react-router-dom';
 import { useUser, SignOutButton } from '@clerk/clerk-react';
 import {
     Home, Trophy, BarChart2, User, Settings, Edit, MapPin, Zap,
-    LogOut, ChevronRight, Star, ExternalLink
+    LogOut, ChevronRight, Star, ExternalLink, Check
 } from 'lucide-react';
 import Navbar from './Navbar';
+import { useVideo } from '../context/VideoContext';
 
 const Profile = () => {
     const { user, isLoaded } = useUser();
+    const { getUserVideos } = useVideo();
+    const userVideos = getUserVideos();
 
     if (!isLoaded) {
         return (
@@ -200,44 +203,56 @@ const Profile = () => {
                     </div>
                 </div>
 
-                {/* Recently Rated */}
+                {/* My Studio Uploads */}
                 <div className="mb-8">
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-2">
                             <div className="w-1 h-6 bg-primary rounded-full"></div>
-                            <h2 className="text-xl font-bold">Recently Rated</h2>
+                            <h2 className="text-xl font-bold">My Studio Uploads</h2>
                         </div>
-                        <button className="text-xs font-bold text-primary hover:text-white transition-colors">
-                            View All History
-                        </button>
+                        <Link to="/upload" className="text-xs font-bold text-primary hover:text-white transition-colors">
+                            + New Upload
+                        </Link>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {[
-                            { name: 'Velocity Dance Studio', type: 'Bolly-Hop Fusion • Delhi', score: '9.2', img: 'https://images.unsplash.com/photo-1516475429286-465d815a0df4?w=500&h=300&fit=crop' },
-                            { name: 'Street Kings Hub', type: 'Underground HipHop • Pune', score: '8.5', img: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=500&h=300&fit=crop' },
-                            { name: 'Classical Vibes Acad.', type: 'Contemporary Kathak • Bengaluru', score: '10', img: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&h=300&fit=crop' },
-                            { name: 'The Groovers Crew', type: 'Lyrical Dance • Kolkata', score: '—', img: 'https://images.unsplash.com/photo-1535525266638-c5f718b533ce?w=500&h=300&fit=crop' },
-                        ].map((item, i) => (
-                            <div key={i} className="bg-[#111] border border-white/10 rounded-xl overflow-hidden group cursor-pointer hover:-translate-y-1 transition-transform">
-                                <div className="h-32 relative">
-                                    <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
-                                    <div className="absolute top-2 right-2 bg-primary text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg">
-                                        {item.score}/10
+                    {userVideos.length === 0 ? (
+                        <div className="bg-[#111] border border-white/10 rounded-xl p-8 text-center">
+                            <p className="text-white/50 mb-4">You haven't uploaded any performances yet.</p>
+                            <Link to="/upload" className="btn btn-primary px-6 py-2 rounded-full text-sm font-bold">
+                                Upload Now
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {userVideos.map((video) => (
+                                <Link to={`/discovered/feed/${video._id}`} key={video._id} className="bg-[#111] border border-white/10 rounded-xl overflow-hidden group hover:border-white/30 transition-colors block">
+                                    <div className="h-32 relative bg-black">
+                                        <video src={video.videoUrl} className="w-full h-full object-cover" />
+
+                                        {/* Status Badge */}
+                                        <div className={`absolute top-2 right-2 px-2 py-1 rounded shadow-lg text-[10px] font-bold uppercase tracking-wider ${video.status === 'approved' ? 'bg-green-500 text-white' :
+                                            video.status === 'rejected' ? 'bg-red-500 text-white' :
+                                                'bg-yellow-500 text-black'
+                                            }`}>
+                                            {video.status || 'Pending'}
+                                        </div>
                                     </div>
-                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
-                                </div>
-                                <div className="p-4">
-                                    <h4 className="font-bold text-sm mb-1 truncate">{item.name}</h4>
-                                    <p className="text-[10px] text-white/50 mb-4 truncate">{item.type}</p>
-                                    <div className="flex items-center justify-between text-[10px] text-white/30 font-bold uppercase tracking-wider">
-                                        <span>{i === 0 ? '2 days ago' : i === 1 ? '4 days ago' : '1 week ago'}</span>
-                                        <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform text-white/60" />
+                                    <div className="p-4">
+                                        <h4 className="font-bold text-sm mb-1 truncate">{video.userName}</h4>
+                                        <p className="text-[10px] text-white/50 mb-3 truncate">{video.description}</p>
+                                        <div className="flex items-center justify-between text-[10px] text-white/30 font-bold uppercase">
+                                            <span>{new Date(video.timestamp).toLocaleDateString()}</span>
+                                            {video.status === 'approved' && (
+                                                <span className="text-green-500 flex items-center gap-1">
+                                                    <Check size={10} /> Live on Grid
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Navigation Overlay */}

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useVideo } from './context/VideoContext';
-import { Check, X, Shield, Plus, Calendar, Music, Tag, Layers } from 'lucide-react';
+import { Check, X, Shield, Plus, Calendar, Music, Layers, Search } from 'lucide-react';
 
 const App = () => {
-  const { getPendingVideos, updateVideoStatus, addChallenge, challenges } = useVideo();
+  const { getPendingVideos, updateVideoStatus, addChallenge, challenges, getPresets } = useVideo();
   const pendingVideos = getPendingVideos();
   const [activeTab, setActiveTab] = useState('reviews'); // 'reviews' or 'challenges'
 
@@ -13,29 +13,84 @@ const App = () => {
     songUrl: '',
     startDate: '',
     endDate: '',
-    tags: ['', '', '', ''],
-    description: ''
+    tags: ['Energy', 'Choreo', 'Sync', 'Vibe'],
+    description: '',
+    image: null,
+    presetComments: { positive: [], neutral: [], negative: [] }
   });
 
-  const handleChallengeSubmit = (e) => {
+  const [availablePresets, setAvailablePresets] = useState({ positive: [], neutral: [], negative: [] });
+
+  React.useEffect(() => {
+    const loadPresets = async () => {
+      const presets = await getPresets();
+      setAvailablePresets(presets);
+    };
+    loadPresets();
+  }, []);
+
+  const togglePreset = (type, text) => {
+    const current = newChallenge.presetComments[type];
+    const limit = type === 'positive' ? 4 : 3;
+
+    if (current.includes(text)) {
+      // Remove
+      setNewChallenge(prev => ({
+        ...prev,
+        presetComments: {
+          ...prev.presetComments,
+          [type]: prev.presetComments[type].filter(t => t !== text)
+        }
+      }));
+    } else {
+      // Add if under limit
+      if (current.length < limit) {
+        setNewChallenge(prev => ({
+          ...prev,
+          presetComments: {
+            ...prev.presetComments,
+            [type]: [...prev.presetComments[type], text]
+          }
+        }));
+      } else {
+        alert(`You can only select ${limit} ${type} comments.`);
+      }
+    }
+  };
+
+  const handleChallengeSubmit = async (e) => {
     e.preventDefault();
-    addChallenge(newChallenge);
+
+    const formData = new FormData();
+    formData.append('title', newChallenge.title);
+    formData.append('songUrl', newChallenge.songUrl);
+    formData.append('startDate', newChallenge.startDate);
+    formData.append('endDate', newChallenge.endDate);
+    formData.append('description', newChallenge.description);
+    // Send info as JSON strings
+    formData.append('tags', JSON.stringify(newChallenge.tags));
+    formData.append('presetComments', JSON.stringify(newChallenge.presetComments));
+
+    if (newChallenge.image) {
+      formData.append('image', newChallenge.image);
+    }
+
+    await addChallenge(formData);
+
     setNewChallenge({
       title: '',
       songUrl: '',
       startDate: '',
       endDate: '',
       tags: ['', '', '', ''],
-      description: ''
+      description: '',
+      image: null,
+      presetComments: { positive: [], neutral: [], negative: [] }
     });
     alert('Challenge Created!');
   };
 
-  const handleTagChange = (index, value) => {
-    const newTags = [...newChallenge.tags];
-    newTags[index] = value;
-    setNewChallenge({ ...newChallenge, tags: newTags });
-  };
+
 
   return (
     <div className="min-h-screen bg-dark-lighter text-white pt-24 px-6 md:px-12 pb-12">
@@ -140,6 +195,17 @@ const App = () => {
                   />
                 </div>
 
+                <div>
+                  <label className="block text-xs font-bold uppercase text-white/50 mb-2">Banner Image</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => setNewChallenge({ ...newChallenge, image: e.target.files[0] })}
+                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-primary file:text-white hover:file:bg-primary/80 transition-all cursor-pointer"
+                  />
+                  <p className="text-[10px] text-white/30 mt-1">Upload a high-quality banner for the main app display.</p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-xs font-bold uppercase text-white/50 mb-2">Song URL</label>
@@ -178,23 +244,72 @@ const App = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-white/50 mb-2">Judge Scoring Tags (4 Required)</label>
-                  <div className="grid grid-cols-2 gap-4">
-                    {[0, 1, 2, 3].map((i) => (
-                      <div key={i} className="relative">
-                        <Tag size={14} className="absolute left-3 top-3.5 text-white/30" />
-                        <input
-                          type="text"
-                          required
-                          value={newChallenge.tags[i]}
-                          onChange={e => handleTagChange(i, e.target.value)}
-                          className="w-full bg-black/20 border border-white/10 rounded-lg pl-9 pr-3 py-3 text-sm text-white focus:border-primary focus:outline-none"
-                          placeholder={`Tag ${i + 1}`}
-                        />
+                  <label className="block text-xs font-bold uppercase text-white/50 mb-2">Preset Comments (Select for Quick Chips)</label>
+
+
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Debug Info */}
+                    {availablePresets.positive.length === 0 && (
+                      <div className="col-span-3 text-red-400 text-xs mb-2">
+                        No presets loaded. Check console for details. (Length: 0)
                       </div>
-                    ))}
+                    )}
+                    {/* Positive */}
+                    <div className="bg-white/5 p-4 rounded-xl">
+                      <h4 className="flex justify-between font-bold text-green-400 mb-2 text-xs uppercase tracking-wider">
+                        Positive <span>{newChallenge.presetComments.positive.length}/4</span>
+                      </h4>
+                      <div className="space-y-2 h-60 overflow-y-auto pr-2 custom-scrollbar">
+                        {availablePresets.positive.map((text, i) => (
+                          <div key={i}
+                            onClick={() => togglePreset('positive', text)}
+                            className={`text-xs p-2 rounded cursor-pointer transition-colors border ${newChallenge.presetComments.positive.includes(text)
+                              ? 'bg-green-500/20 border-green-500 text-white'
+                              : 'bg-black/20 border-white/5 text-white/50 hover:bg-white/10'
+                              }`}>
+                            {text}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Neutral */}
+                    <div className="bg-white/5 p-4 rounded-xl">
+                      <h4 className="flex justify-between font-bold text-yellow-400 mb-2 text-xs uppercase tracking-wider">
+                        Neutral <span>{newChallenge.presetComments.neutral.length}/3</span>
+                      </h4>
+                      <div className="space-y-2 h-60 overflow-y-auto pr-2 custom-scrollbar">
+                        {availablePresets.neutral.map((text, i) => (
+                          <div key={i}
+                            onClick={() => togglePreset('neutral', text)}
+                            className={`text-xs p-2 rounded cursor-pointer transition-colors border ${newChallenge.presetComments.neutral.includes(text)
+                              ? 'bg-yellow-500/20 border-yellow-500 text-white'
+                              : 'bg-black/20 border-white/5 text-white/50 hover:bg-white/10'
+                              }`}>
+                            {text}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Negative */}
+                    <div className="bg-white/5 p-4 rounded-xl">
+                      <h4 className="flex justify-between font-bold text-red-400 mb-2 text-xs uppercase tracking-wider">
+                        Negative <span>{newChallenge.presetComments.negative.length}/3</span>
+                      </h4>
+                      <div className="space-y-2 h-60 overflow-y-auto pr-2 custom-scrollbar">
+                        {availablePresets.negative.map((text, i) => (
+                          <div key={i}
+                            onClick={() => togglePreset('negative', text)}
+                            className={`text-xs p-2 rounded cursor-pointer transition-colors border ${newChallenge.presetComments.negative.includes(text)
+                              ? 'bg-red-500/20 border-red-500 text-white'
+                              : 'bg-black/20 border-white/5 text-white/50 hover:bg-white/10'
+                              }`}>
+                            {text}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-[10px] text-white/30 mt-2">These tags will appear on the Discover page for judging.</p>
                 </div>
 
                 <div>

@@ -76,6 +76,31 @@ export const VideoProvider = ({ children }) => {
         }
     };
 
+    // Add Comment - Post to backend
+    const addComment = async (submissionId, commentData) => {
+        try {
+            const res = await fetch(`${API_URL}/submissions/${submissionId}/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(commentData)
+            });
+
+            if (!res.ok) throw new Error('Failed to add comment');
+
+            // Get updated submission
+            const updatedSubmission = await res.json();
+
+            // Update local state
+            setVideos(prev => prev.map(v => v._id === updatedSubmission._id ? updatedSubmission : v));
+            return updatedSubmission;
+        } catch (err) {
+            console.error("Error adding comment:", err);
+            throw err;
+        }
+    };
+
     const getApprovedVideos = () => videos.filter(v => v.status === 'approved');
     const getPendingVideos = () => videos.filter(v => v.status === 'pending');
 

@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useVideo } from '../context/VideoContext';
 import { useUser } from '@clerk/clerk-react';
 import { Play, Heart, MessageCircle, Share2, Music, ChevronUp, ChevronDown } from 'lucide-react';
 import Navbar from './Navbar';
 
+import { useParams } from 'react-router-dom';
+
 const Discovered = () => {
     const { getApprovedVideos } = useVideo();
+    const { initialVideoId } = useParams();
     const { user } = useUser();
 
     const [videos, setVideos] = useState([]);
@@ -29,7 +33,7 @@ const Discovered = () => {
         // Load approved videos and prepend the local demo video
         const approvedVideos = getApprovedVideos();
         const demoVideo = {
-            id: 'local-demo',
+            _id: 'local-demo', // Changed id to _id for consistency
             userId: 'demo-user',
             userName: 'ShowGrid Demo',
             userAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ShowGrid',
@@ -39,8 +43,17 @@ const Discovered = () => {
             city: 'Mumbai',
             timestamp: new Date().toISOString()
         };
-        setVideos([demoVideo, ...approvedVideos]);
-    }, [getApprovedVideos]);
+        const allVideos = [demoVideo, ...approvedVideos];
+        setVideos(allVideos);
+
+        // Deep Linking Logic
+        if (initialVideoId) {
+            const index = allVideos.findIndex(v => v._id === initialVideoId);
+            if (index !== -1) {
+                setCurrentIndex(index);
+            }
+        }
+    }, [getApprovedVideos, initialVideoId]);
 
     const currentVideo = videos[currentIndex];
 

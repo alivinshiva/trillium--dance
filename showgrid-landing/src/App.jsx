@@ -96,6 +96,19 @@ function App() {
         }
       />
       <Route
+        path="/discovered/feed/:initialVideoId"
+        element={
+          <>
+            <SignedIn>
+              <Discovered />
+            </SignedIn>
+            <SignedOut>
+              <RedirectToSignIn />
+            </SignedOut>
+          </>
+        }
+      />
+      <Route
         path="/profile"
         element={
           <>

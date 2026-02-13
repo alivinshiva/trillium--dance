@@ -51,6 +51,8 @@ const UploadFinal = () => {
         }
     };
 
+    const [success, setSuccess] = useState(false);
+
     const handleSubmit = async () => {
         if (!file || !studioName || !city || !agreed) return;
 
@@ -67,10 +69,6 @@ const UploadFinal = () => {
             formData.append('city', city);
             formData.append('challengeId', 'demo-challenge'); // TODO: Get actual challenge ID
 
-            // TODO: Implement real progress tracking if possible, 
-            // for now we just show processing state since fetch doesn't support progress events easily.
-            // Alternatively, could use XMLHttpRequest for progress like before but send to backend.
-
             // Simulating progress for UX since we can't easily track fetch upload progress
             const interval = setInterval(() => {
                 setUploadProgress(prev => Math.min(prev + 10, 90));
@@ -81,7 +79,7 @@ const UploadFinal = () => {
             clearInterval(interval);
             setUploadProgress(100);
             setUploading(false);
-            navigate('/profile');
+            setSuccess(true); // Show success message
 
         } catch (error) {
             console.error(error);
@@ -91,13 +89,44 @@ const UploadFinal = () => {
         }
     };
 
-    // Removed separate completeUpload function as it's merged into handleSubmit
+    if (success) {
+        return (
+            <div className="min-h-screen bg-dark-lighter text-white flex flex-col">
+                <Navbar />
+                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                    <div className="w-24 h-24 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mb-6 animate-bounce">
+                        <Check size={48} />
+                    </div>
+                    <h1 className="text-4xl font-extrabold mb-4">Submission Received!</h1>
+                    <p className="text-white/60 max-w-md mb-8">
+                        Your performance is now <span className="text-yellow-400 font-bold">Under Review</span>.
+                        <br />We will notify you once it's approved and live on the grid.
+                    </p>
 
+                    <div className="flex gap-4">
+                        <button
+                            onClick={() => navigate('/profile')}
+                            className="btn btn-primary px-8 py-3 rounded-full font-bold"
+                        >
+                            Go to Dashboard
+                        </button>
+                        <button
+                            onClick={() => navigate('/discovered')}
+                            className="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-full font-bold transition-colors"
+                        >
+                            Back to Grid
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-dark-lighter text-white">
             <Navbar />
 
+            {/* Same form as before */}
             <div className="pt-32 pb-20 container max-w-4xl mx-auto">
                 <div className="mb-8">
                     <p className="text-white/40 text-xs font-bold tracking-widest uppercase mb-2">Challenges / Studio Performance Upload</p>

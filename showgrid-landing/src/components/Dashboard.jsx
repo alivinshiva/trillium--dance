@@ -6,6 +6,7 @@ import {
     Star, MapPin, Trophy, Play, Home, User, Settings, LogOut
 } from 'lucide-react';
 import Navbar from './Navbar';
+import { useVideo } from '../context/VideoContext';
 
 const Dashboard = () => {
     const { user, isLoaded } = useUser();
@@ -126,28 +127,55 @@ const Dashboard = () => {
                         {/* Current Challenge Video & Mastery Analysis */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             {/* Video Card */}
-                            <div className="lg:col-span-2 bg-[#0a0a0a] border border-white/10 rounded-3xl p-6 overflow-hidden relative group">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-bold flex items-center gap-2">
-                                        <Play size={18} className="text-pink-500" /> Current Challenge Video
-                                    </h3>
-                                </div>
-                                <div className="relative h-64 w-full rounded-2xl overflow-hidden">
-                                    <img
-                                        src="https://images.unsplash.com/photo-1547153760-18fc86324498?w=800&q=80"
-                                        className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
-                                        alt="Challenge"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
-                                    <div className="absolute top-4 right-4 bg-pink-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-[0_0_10px_rgba(236,72,153,0.5)]">
-                                        TRENDING #12
-                                    </div>
-                                    <div className="absolute bottom-4 left-4">
-                                        <h4 className="text-xl font-bold text-white mb-1">Bol Shakalaka Choreography</h4>
-                                        <p className="text-xs text-white/60">Mumbai Urban Street Mix • 482k Views</p>
-                                    </div>
-                                </div>
-                            </div>
+                            {(() => {
+                                const { getUserVideos } = useVideo();
+                                const userVideos = getUserVideos();
+                                const latestApprovedVideo = userVideos.find(v => v.status === 'approved');
+
+                                if (latestApprovedVideo) {
+                                    return (
+                                        <div className="lg:col-span-2 bg-[#0a0a0a] border border-white/10 rounded-3xl p-6 overflow-hidden relative group">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h3 className="text-lg font-bold flex items-center gap-2">
+                                                    <Play size={18} className="text-pink-500" /> Current Challenge Video
+                                                </h3>
+                                            </div>
+                                            <Link to={`/discovered/feed/${latestApprovedVideo._id}`} className="block relative h-64 w-full rounded-2xl overflow-hidden cursor-pointer">
+                                                <video
+                                                    src={latestApprovedVideo.videoUrl}
+                                                    className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                                        <Play size={32} className="text-white ml-1" fill="white" />
+                                                    </div>
+                                                </div>
+                                                <div className="absolute top-4 right-4 bg-pink-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-[0_0_10px_rgba(236,72,153,0.5)]">
+                                                    TRENDING #12
+                                                </div>
+                                                <div className="absolute bottom-4 left-4">
+                                                    <h4 className="text-xl font-bold text-white mb-1">{latestApprovedVideo.description || "Challenge Entry"}</h4>
+                                                    <p className="text-xs text-white/60">Global Grid • {new Date(latestApprovedVideo.timestamp).toLocaleDateString()}</p>
+                                                </div>
+                                            </Link>
+                                        </div>
+                                    );
+                                } else {
+                                    return (
+                                        <div className="lg:col-span-2 bg-[#0a0a0a] border border-white/10 rounded-3xl p-6 overflow-hidden relative group flex flex-col items-center justify-center text-center min-h-[300px]">
+                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                                                <Zap size={32} className="text-white/20" />
+                                            </div>
+                                            <h3 className="text-xl font-bold mb-2">No Active Challenge</h3>
+                                            <p className="text-white/40 max-w-sm mb-6">You haven't uploaded a video to the current challenge yet. Join the grid to see your stats here!</p>
+                                            <Link to="/upload" className="btn btn-primary px-8 py-3 rounded-full font-bold">
+                                                Upload Performance
+                                            </Link>
+                                        </div>
+                                    );
+                                }
+                            })()}
 
                             {/* Mastery Analysis */}
                             <div className="bg-[#0a0a0a] border border-white/10 rounded-3xl p-6 relative">

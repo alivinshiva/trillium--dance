@@ -51,10 +51,8 @@ export const VideoProvider = ({ children }) => {
         try {
             const res = await fetch(`${API_URL}/challenges`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(challengeData)
+                // body is FormData, so no Content-Type header needed (browser sets it with boundary)
+                body: challengeData
             });
 
             if (!res.ok) {
@@ -68,6 +66,26 @@ export const VideoProvider = ({ children }) => {
         } catch (err) {
             console.error("Error adding challenge:", err);
             alert(`Error: ${err.message}`);
+        }
+    };
+
+    // Get Presets from Backend
+    const getPresets = async () => {
+        console.log("Fetching presets from:", `${API_URL}/challenges/presets`);
+        try {
+            const res = await fetch(`${API_URL}/challenges/presets`);
+            console.log("Presets fetch status:", res.status);
+
+            if (res.ok) {
+                const data = await res.json();
+                console.log("Presets data:", data);
+                return data;
+            }
+            console.error("Failed to fetch presets:", res.statusText);
+            return { positive: [], neutral: [], negative: [] };
+        } catch (err) {
+            console.error("Error fetching presets:", err);
+            return { positive: [], neutral: [], negative: [] };
         }
     };
 
@@ -117,7 +135,8 @@ export const VideoProvider = ({ children }) => {
             challenges,
             addChallenge,
             selectedChallenge,
-            setSelectedChallenge
+            setSelectedChallenge,
+            getPresets
         }}>
             {children}
         </VideoContext.Provider>

@@ -34,6 +34,14 @@ const submissionSchema = new mongoose.Schema({
         type: [String],
         default: []
     },
+    comments: [{
+        userId: String,
+        userName: String,
+        userAvatar: String,
+        text: String,
+        type: { type: String, enum: ['positive', 'neutral', 'negative', 'custom'], default: 'custom' },
+        createdAt: { type: Date, default: Date.now }
+    }],
     createdAt: {
         type: Date,
         default: Date.now
