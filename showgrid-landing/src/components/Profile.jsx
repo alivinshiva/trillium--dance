@@ -2,14 +2,14 @@ import { Link } from 'react-router-dom';
 import { useUser, SignOutButton } from '@clerk/clerk-react';
 import {
     Home, Trophy, BarChart2, User, Settings, Edit, MapPin, Zap,
-    LogOut, ChevronRight, Star, ExternalLink, Check
+    LogOut, ChevronRight, Star, ExternalLink, Check, Trash2
 } from 'lucide-react';
 import Navbar from './Navbar';
 import { useVideo } from '../context/VideoContext';
 
 const Profile = () => {
     const { user, isLoaded } = useUser();
-    const { getUserVideos } = useVideo();
+    const { getUserVideos, deleteVideo } = useVideo();
     const userVideos = getUserVideos();
 
     if (!isLoaded) {
@@ -238,7 +238,21 @@ const Profile = () => {
                                         </div>
                                     </div>
                                     <div className="p-4">
-                                        <h4 className="font-bold text-sm mb-1 truncate">{video.userName}</h4>
+                                        <div className="flex justify-between items-start mb-1">
+                                            <h4 className="font-bold text-sm truncate flex-1">{video.userName}</h4>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault(); // Prevent navigation
+                                                    if (confirm('Are you sure you want to delete this video?')) {
+                                                        deleteVideo(video._id).catch(err => alert(err.message));
+                                                    }
+                                                }}
+                                                className="text-white/20 hover:text-red-500 transition-colors p-1 -mr-2 -mt-1"
+                                                title="Delete Video"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
                                         <p className="text-[10px] text-white/50 mb-3 truncate">{video.description}</p>
                                         <div className="flex items-center justify-between text-[10px] text-white/30 font-bold uppercase">
                                             <span>{new Date(video.timestamp).toLocaleDateString()}</span>

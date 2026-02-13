@@ -69,6 +69,27 @@ export const VideoProvider = ({ children }) => {
         }
     };
 
+    // Delete Challenge - DELETE to Backend
+    const deleteChallenge = async (id) => {
+        try {
+            const res = await fetch(`${API_URL}/challenges/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Failed to delete challenge');
+            }
+
+            setChallenges(prev => prev.filter(c => c._id !== id));
+            return true;
+        } catch (err) {
+            console.error("Error deleting challenge:", err);
+            alert(`Error: ${err.message}`);
+            return false;
+        }
+    };
+
     // Get Presets from Backend
     const getPresets = async () => {
         console.log("Fetching presets from:", `${API_URL}/challenges/presets`);
@@ -90,14 +111,17 @@ export const VideoProvider = ({ children }) => {
     };
 
     // Update Video Status - PATCH to Backend
-    const updateVideoStatus = async (id, status) => {
+    const updateVideoStatus = async (id, status, comment = null) => {
         try {
+            const body = { status };
+            if (comment) body.comment = comment;
+
             const res = await fetch(`${API_URL}/submissions/${id}/status`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ status })
+                body: JSON.stringify(body)
             });
 
             if (!res.ok) {
@@ -134,6 +158,7 @@ export const VideoProvider = ({ children }) => {
             getPendingVideos,
             challenges,
             addChallenge,
+            deleteChallenge,
             selectedChallenge,
             setSelectedChallenge,
             getPresets

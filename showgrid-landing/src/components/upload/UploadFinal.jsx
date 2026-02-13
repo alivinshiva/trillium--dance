@@ -7,7 +7,7 @@ import Navbar from '../Navbar';
 
 const UploadFinal = () => {
     const navigate = useNavigate();
-    const { addVideo } = useVideo();
+    const { addVideo, selectedChallenge } = useVideo();
     const { user } = useUser();
 
     const [studioName, setStudioName] = useState('');
@@ -23,6 +23,15 @@ const UploadFinal = () => {
     const cities = [
         "Mumbai", "Delhi", "Bangalore", "Kolkata", "Chennai", "Hyderabad", "Pune", "Ahmedabad", "Jaipur", "Surat"
     ];
+
+    const AVAILABLE_TAGS = [
+        "#DanceVideo", "#DanceLife", "#Choreography", "#DanceReels", "#InstaDance",
+        "#StreetDance", "#StudioDance", "#FreestyleDance", "#HipHopDance", "#UrbanDance",
+        "#DanceVibes", "#FeelTheBeat", "#GrooveTime", "#DanceFlow", "#JustDance",
+        "#ContemporaryDance", "#DancePerformance", "#BeatDrop", "#MoveWithMusic", "#DancerVibes"
+    ];
+
+    const [selectedTags, setSelectedTags] = useState([]);
 
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
@@ -56,6 +65,11 @@ const UploadFinal = () => {
     const handleSubmit = async () => {
         if (!file || !studioName || !city || !agreed) return;
 
+        if (!selectedChallenge) {
+            alert("No challenge selected found. Please go back and join a challenge.");
+            return;
+        }
+
         setUploading(true);
         setUploadProgress(10); // Start progress
 
@@ -67,7 +81,8 @@ const UploadFinal = () => {
             formData.append('userAvatar', user.imageUrl || 'https://via.placeholder.com/150');
             formData.append('description', `Performing from ${city}`);
             formData.append('city', city);
-            formData.append('challengeId', 'demo-challenge'); // TODO: Get actual challenge ID
+            formData.append('challengeId', selectedChallenge._id);
+            formData.append('tags', JSON.stringify(selectedTags));
 
             // Simulating progress for UX since we can't easily track fetch upload progress
             const interval = setInterval(() => {
@@ -126,7 +141,6 @@ const UploadFinal = () => {
         <div className="min-h-screen bg-dark-lighter text-white">
             <Navbar />
 
-            {/* Same form as before */}
             <div className="pt-32 pb-20 container max-w-4xl mx-auto">
                 <div className="mb-8">
                     <p className="text-white/40 text-xs font-bold tracking-widest uppercase mb-2">Challenges / Studio Performance Upload</p>
@@ -160,6 +174,36 @@ const UploadFinal = () => {
                                 <ChevronRight size={16} className="rotate-90" />
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                {/* Tags Selection */}
+                <div className="mb-12">
+                    <label className="block text-sm font-bold mb-4">Select Tags (Max 10)</label>
+                    <div className="flex flex-wrap gap-3">
+                        {AVAILABLE_TAGS.map(tag => (
+                            <button
+                                key={tag}
+                                onClick={() => {
+                                    if (selectedTags.includes(tag)) {
+                                        setSelectedTags(prev => prev.filter(t => t !== tag));
+                                    } else {
+                                        if (selectedTags.length < 10) {
+                                            setSelectedTags(prev => [...prev, tag]);
+                                        }
+                                    }
+                                }}
+                                className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 border ${selectedTags.includes(tag)
+                                    ? 'bg-primary border-primary text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]'
+                                    : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:border-white/20'
+                                    }`}
+                            >
+                                {tag}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="mt-2 text-xs text-white/40 text-right">
+                        {selectedTags.length}/10 selected
                     </div>
                 </div>
 

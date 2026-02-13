@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
         if (req.query.userId) filter.userId = req.query.userId;
         if (req.query.challengeId) filter.challengeId = req.query.challengeId;
 
-        const submissions = await Submission.find(filter).sort({ createdAt: -1 });
+        const submissions = await Submission.find(filter).sort({ createdAt: -1 }).populate('challengeId');
         res.json(submissions);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -24,7 +24,18 @@ router.post('/', upload.single('file'), async (req, res) => {
             return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        const { userId, userName, userAvatar, description, city, challengeId } = req.body;
+        const { userId, userName, userAvatar, description, city, challengeId, tags } = req.body;
+
+        // Parse tags if sent as string (FormData)
+        let parsedTags = [];
+        if (tags) {
+            try {
+                parsedTags = JSON.parse(tags);
+            } catch (e) {
+                // If not JSON, maybe comma separated or just single value
+                parsedTags = Array.isArray(tags) ? tags : tags.split(',');
+            }
+        }
 
         const submission = new Submission({
             userId,
@@ -34,7 +45,8 @@ router.post('/', upload.single('file'), async (req, res) => {
             city,
             challengeId,
             videoUrl: req.file.path, // Cloudinary URL
-            status: 'pending'
+            status: 'pending',
+            tags: parsedTags
         });
 
         const newSubmission = await submission.save();
@@ -55,6 +67,12 @@ router.post('/:id/comments', async (req, res) => {
             return res.status(404).json({ message: 'Submission not found' });
         }
 
+        // Check if user has already commented
+        const existingComment = submission.comments.find(c => c.userId === userId);
+        if (existingComment) {
+            return res.status(400).json({ message: 'You have already commented on this video' });
+        }
+
         submission.comments.push({
             userId,
             userName,
@@ -65,9 +83,23 @@ router.post('/:id/comments', async (req, res) => {
         });
 
         await submission.save();
+        await submission.populate('challengeId');
         res.json(submission);
     } catch (err) {
         console.error("Error adding comment:", err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// DELETE a submission
+router.delete('/:id', async (req, res) => {
+    try {
+        const submission = await Submission.findByIdAndDelete(req.params.id);
+        if (!submission) {
+            return res.status(404).json({ message: 'Submission not found' });
+        }
+        res.json({ message: 'Submission deleted successfully' });
+    } catch (err) {
         res.status(500).json({ message: err.message });
     }
 });

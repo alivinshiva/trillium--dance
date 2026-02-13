@@ -99,6 +99,27 @@ export const VideoProvider = ({ children }) => {
             console.error("Error adding comment:", err);
             throw err;
         }
+    }
+
+    // Delete Video
+    const deleteVideo = async (videoId) => {
+        try {
+            const res = await fetch(`${API_URL}/submissions/${videoId}`, {
+                method: 'DELETE'
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Failed to delete video');
+            }
+
+            // Update local state
+            setVideos(prev => prev.filter(v => v._id !== videoId));
+            return true;
+        } catch (err) {
+            console.error("Error deleting video:", err);
+            throw err;
+        }
     };
 
     const getApprovedVideos = () => videos.filter(v => v.status === 'approved');
@@ -109,13 +130,31 @@ export const VideoProvider = ({ children }) => {
         return videos.filter(v => v.userId === user.id);
     };
 
+    // Get Presets from Backend
+    const getPresets = async () => {
+        try {
+            const res = await fetch(`${API_URL}/challenges/presets`);
+            if (res.ok) {
+                const data = await res.json();
+                return data;
+            }
+            return { positive: [], neutral: [], negative: [] };
+        } catch (err) {
+            console.error("Error fetching presets:", err);
+            return { positive: [], neutral: [], negative: [] };
+        }
+    };
+
     return (
         <VideoContext.Provider value={{
             videos,
             addVideo,
+            addComment,
+            deleteVideo,
             getApprovedVideos,
             getPendingVideos,
             getUserVideos,
+            getPresets,
             challenges,
             selectedChallenge,
             setSelectedChallenge

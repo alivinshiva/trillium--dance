@@ -2,23 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useVideo } from '../context/VideoContext';
 import { useUser } from '@clerk/clerk-react';
-import { Play, Heart, MessageCircle, Share2, Music, ChevronUp, ChevronDown } from 'lucide-react';
+import { Play, Heart, MessageCircle, Share2, Music, ChevronUp, ChevronDown, Check } from 'lucide-react';
 import Navbar from './Navbar';
 
-import { useParams } from 'react-router-dom';
+
 
 const Discovered = () => {
-    const { getApprovedVideos } = useVideo();
+    const { getApprovedVideos, getPresets, addComment } = useVideo();
     const { initialVideoId } = useParams();
     const { user } = useUser();
 
+    // Main State
     const [videos, setVideos] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(true);
     const videoRef = React.useRef(null);
     // Mobile Detection
     const [isMobile, setIsMobile] = useState(false);
+    // Rating State
+    const [ratings, setRatings] = useState({ energy: 3.0, choreo: 3.0, sync: 3.0 });
 
+    const currentVideo = videos[currentIndex];
+
+    // Mobile Check Effect
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
         checkMobile();
@@ -26,36 +32,41 @@ const Discovered = () => {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Rating State
-    const [ratings, setRatings] = useState({ energy: 3.0, choreo: 3.0, sync: 3.0 });
+    // Commenting Logic
+    const [showComments, setShowComments] = useState(false);
+    const [commentPresets, setCommentPresets] = useState({ positive: [], neutral: [], negative: [] });
 
     useEffect(() => {
-        // Load approved videos and prepend the local demo video
-        const approvedVideos = getApprovedVideos();
-        const demoVideo = {
-            _id: 'local-demo', // Changed id to _id for consistency
-            userId: 'demo-user',
-            userName: 'ShowGrid Demo',
-            userAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ShowGrid',
-            videoUrl: '/v1.mp4',
-            description: 'Showcasing the power of the grid! #ShowGrid #Dance',
-            judgeTags: ['Energy', 'Choreo', 'Sync'],
-            city: 'Mumbai',
-            timestamp: new Date().toISOString()
+        const loadPresets = async () => {
+            // 1. Try to get presets from the current video's challenge
+            if (currentVideo && currentVideo.challengeId && currentVideo.challengeId.presetComments) {
+                setCommentPresets(currentVideo.challengeId.presetComments);
+            } else {
+                // 2. Fallback to global presets if no challenge-specific ones
+                const data = await getPresets();
+                if (data) setCommentPresets(data);
+            }
         };
-        const allVideos = [demoVideo, ...approvedVideos];
-        setVideos(allVideos);
+        loadPresets();
+    }, [getPresets, currentVideo]);
+
+
+
+    useEffect(() => {
+        // Load approved videos
+        const approvedVideos = getApprovedVideos();
+        setVideos(approvedVideos);
 
         // Deep Linking Logic
         if (initialVideoId) {
-            const index = allVideos.findIndex(v => v._id === initialVideoId);
+            const index = approvedVideos.findIndex(v => v._id === initialVideoId);
             if (index !== -1) {
                 setCurrentIndex(index);
             }
         }
     }, [getApprovedVideos, initialVideoId]);
 
-    const currentVideo = videos[currentIndex];
+
 
     const handleNext = () => {
         if (currentIndex < videos.length - 1) {
@@ -131,6 +142,26 @@ const Discovered = () => {
         displayTags.push(`Metric ${displayTags.length + 1}`);
     }
 
+
+
+    const handlePresetComment = async (text, type) => {
+        if (!user || !currentVideo) return;
+
+        try {
+            await addComment(currentVideo._id, {
+                userId: user.id,
+                userName: user.fullName || user.username,
+                userAvatar: user.imageUrl,
+                text: text,
+                type: type
+            });
+            setShowComments(false);
+            // Optionally show success toast here
+        } catch (err) {
+            console.error("Failed to post comment", err);
+        }
+    };
+
     return (
         <div
             className="h-screen w-full bg-black overflow-hidden relative"
@@ -156,6 +187,81 @@ const Discovered = () => {
                 )}
             </div>
 
+            {/* Comments Modal / Overlay */}
+            {showComments && (
+                <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-4">
+                    <div className="bg-[#111] border border-white/10 w-full max-w-md rounded-3xl p-6 animate-fade-in-up md:max-h-[80vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <MessageCircle size={20} /> Drop a Comment
+                            </h3>
+                            <button onClick={() => setShowComments(false)} className="p-2 bg-white/10 rounded-full hover:bg-white/20">
+                                <ChevronDown size={20} />
+                            </button>
+                        </div>
+
+                        <div className="space-y-6">
+                            {currentVideo.comments && currentVideo.comments.some(c => c.userId === user?.id) ? (
+                                <div className="text-center py-8">
+                                    <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Check size={32} className="text-green-500" />
+                                    </div>
+                                    <h4 className="text-white font-bold text-lg mb-2">Feedback Sent!</h4>
+                                    <p className="text-white/50 text-sm">You have already shared your feedback on this performance.</p>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Positive */}
+                                    <div>
+                                        <h4 className="text-xs font-bold text-green-400 uppercase tracking-wider mb-3">Hype Them Up!</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {commentPresets.positive.map((text, i) => (
+                                                <button key={i} onClick={() => handlePresetComment(text, 'positive')}
+                                                    className="text-xs px-3 py-2 bg-green-500/10 border border-green-500/30 rounded-full text-green-100 hover:bg-green-500/20 hover:border-green-500 transition-all">
+                                                    {text}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Neutral / Technical */}
+                                    {commentPresets.neutral && commentPresets.neutral.length > 0 && (
+                                        <div>
+                                            <h4 className="text-xs font-bold text-yellow-400 uppercase tracking-wider mb-3">Observations</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {commentPresets.neutral.map((text, i) => (
+                                                    <button key={i} onClick={() => handlePresetComment(text, 'neutral')}
+                                                        className="text-xs px-3 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-100 hover:bg-yellow-500/20 hover:border-yellow-500 transition-all">
+                                                        {text}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Negative / Constructive (Maybe hide for regular users or rephrase?) */}
+                                    {/* Keeping it simple for now, maybe users only see positive/neutral? 
+                                  User request said "other user can select comment from there", implying all presets? 
+                                  Let's include them but maybe labeled "Constructive" */}
+                                    {commentPresets.negative && commentPresets.negative.length > 0 && (
+                                        <div>
+                                            <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3">Constructive Feedback</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {commentPresets.negative.map((text, i) => (
+                                                    <button key={i} onClick={() => handlePresetComment(text, 'negative')}
+                                                        className="text-xs px-3 py-2 bg-purple-500/10 border border-purple-500/30 rounded-full text-purple-100 hover:bg-purple-500/20 hover:border-purple-500 transition-all">
+                                                        {text}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
 
             {/* Side Actions (Like, Share, Nav) - Desktop Only or Modified for Mobile */}
@@ -173,10 +279,10 @@ const Discovered = () => {
                             <span className="text-xs font-bold text-white shadow-black drop-shadow-md">12.4K</span>
                         </div>
                         <div className="flex flex-col items-center gap-1">
-                            <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 hover:scale-110 transition-all">
+                            <div onClick={() => setShowComments(true)} className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 hover:scale-110 transition-all">
                                 <MessageCircle size={24} color="white" />
                             </div>
-                            <span className="text-xs font-bold text-white shadow-black drop-shadow-md">408</span>
+                            <span className="text-xs font-bold text-white shadow-black drop-shadow-md">{currentVideo.comments ? currentVideo.comments.length : 0}</span>
                         </div>
                         <div className="flex flex-col items-center gap-1">
                             <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 hover:scale-110 transition-all">
@@ -192,32 +298,104 @@ const Discovered = () => {
                 </div>
             )}
 
+            {/* Desktop Rating Card - Moved to absolute position for visibility */}
+            {!isMobile && (
+                <div className="absolute right-12 bottom-12 z-30 w-80">
+                    {/* Judge Feedback Toast */}
+                    {currentVideo.comments && currentVideo.comments.length > 0 && (
+                        <div className="mb-4 bg-black/60 backdrop-blur-md border-l-4 border-yellow-500 p-4 rounded-r-xl animate-fade-in-up">
+                            <div className="flex items-center gap-2 mb-1">
+                                <div className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                                    Last Feedback
+                                </div>
+                                <span className="text-white/40 text-[10px]">{new Date(currentVideo.comments[currentVideo.comments.length - 1].createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <p className="text-white text-sm font-medium italic">"{currentVideo.comments[currentVideo.comments.length - 1].text}"</p>
+                        </div>
+                    )}
+
+                    <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-2xl">
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-xs font-bold tracking-widest text-white/60">LIVE RATING</span>
+                            <div className="flex items-center gap-2 text-green-400 text-xs font-bold">
+                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                Voting Active
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            {(currentVideo.judgeTags || ['Energy', 'Choreo', 'Sync']).map((tag, index) => {
+                                const tagStr = typeof tag === 'string' ? tag : `Tag ${index + 1}`;
+                                const tagKey = typeof tag === 'string' ? tag.toLowerCase() : `tag${index}`;
+                                const val = ratings[tagKey] || 3.0;
+                                const accents = ['accent-primary', 'accent-secondary', 'accent-purple-500', 'accent-yellow-500'];
+
+                                return (
+                                    <div key={index}>
+                                        <div className="flex justify-between text-xs font-bold mb-1">
+                                            <span className="text-white uppercase">{tagStr}</span>
+                                            <span className="text-primary">{Number(val).toFixed(1)}</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="1"
+                                            max="5"
+                                            step="0.1"
+                                            value={val}
+                                            onChange={(e) => handleRatingChange(tagKey, e.target.value)}
+                                            className={`w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer ${accents[index % accents.length]}`}
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Bottom Content Info */}
-            <div className={`absolute bottom-0 left-0 w-full z-20 flex flex-col justify-end transition-all duration-300 ${isMobile ? 'pb-20 px-4' : 'pb-12 px-12 md:flex-row md:items-end md:justify-between md:gap-8'}`}>
+            <div className={`absolute bottom-0 left-0 w-full z-20 flex flex-col justify-end transition-all duration-300 ${isMobile ? 'pb-24 px-4' : 'pb-12 px-12 md:max-w-2xl'}`}>
 
                 {/* User Info */}
-                <div className={`w-full ${isMobile ? 'mb-4' : 'flex-1 max-w-2xl mb-0'}`}>
+                <div className={`w-full ${isMobile ? 'mb-4' : 'mb-0'}`}>
                     <div className="flex items-center gap-3 mb-2">
                         <img src={currentVideo.userAvatar} className={`${isMobile ? 'w-10 h-10' : 'w-14 h-14'} rounded-full border-2 border-primary`} alt="User" />
                         <div>
                             <h3 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-white drop-shadow-lg shadow-black`}>@{currentVideo.userName}</h3>
                             <div className="flex items-center gap-2 text-xs text-white/80 shadow-black drop-shadow-md">
                                 <Music size={12} />
-                                <span>Original Audio • ShowGrid Official</span>
+                                <span className="drop-shadow-sm">Original Audio • ShowGrid Official</span>
                             </div>
                         </div>
-                        <button className="btn btn-outline border-primary text-primary bg-black/20 backdrop-blur-sm hover:bg-primary hover:text-white px-3 py-1 text-[10px] ml-auto rounded-full">
-                            Follow
-                        </button>
+                        {/* Follow button logic could go here */}
                     </div>
                     <p className={`${isMobile ? 'text-sm' : 'text-lg'} text-white/90 drop-shadow-md shadow-black line-clamp-2`}>
                         {currentVideo.description || "Submitting my take on the #ShowGridChallenge!"}
                     </p>
+
+                    {/* Display hashtags */}
+                    {currentVideo.tags && currentVideo.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            {currentVideo.tags.map((tag, i) => (
+                                <span key={i} className="text-xs font-bold text-primary shadow-black drop-shadow-sm">{tag}</span>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Mobile Only: Judge Feedback Toast (Small) */}
+                    {isMobile && currentVideo.comments && currentVideo.comments.length > 0 && (
+                        <div className="mt-3 bg-black/40 backdrop-blur-sm border-l-2 border-yellow-500 pl-3 py-1 rounded-r-lg">
+                            <p className="text-white/90 text-xs italic">
+                                <span className="text-yellow-500 font-bold mr-2">FEEDBACK:</span>
+                                "{currentVideo.comments[currentVideo.comments.length - 1].text}"
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Mobile: Rating + Actions Container */}
                 {isMobile ? (
-                    <div className="w-full pb-6 relative z-20">
+                    <div className="w-full pb-6 relative z-20 mt-4">
                         {/* Custom Gradient Background */}
                         <div className="absolute -inset-x-4 -bottom-24 h-96 bg-gradient-to-t from-black via-black/80 to-transparent -z-10 pointer-events-none"></div>
 
@@ -254,11 +432,11 @@ const Discovered = () => {
                                     );
                                     if (index === 1) return (
                                         <div className="flex flex-col items-center gap-1 group">
-                                            <div className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
+                                            <div onClick={() => setShowComments(true)} className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
                                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-white/5 rounded-full blur-sm"></div>
                                                 <MessageCircle size={24} color="white" className="drop-shadow-md z-10" />
                                             </div>
-                                            <span className="text-[10px] font-bold text-white shadow-black drop-shadow-md">408</span>
+                                            <span className="text-[10px] font-bold text-white shadow-black drop-shadow-md">{currentVideo.comments ? currentVideo.comments.length : 0}</span>
                                         </div>
                                     );
                                     if (index === 2) return (
@@ -321,52 +499,7 @@ const Discovered = () => {
                             })}
                         </div>
                     </div>
-                ) : (
-                    /* Desktop Rating Card */
-                    <div className="w-full md:max-w-sm bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-2xl">
-                        <div className="flex justify-between items-center mb-4">
-                            <span className="text-xs font-bold tracking-widest text-white/60">LIVE RATING</span>
-                            <div className="flex items-center gap-2 text-green-400 text-xs font-bold">
-                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                Voting Active
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            {(currentVideo.judgeTags || ['Energy', 'Choreo', 'Sync']).map((tag, index) => {
-                                const tagStr = typeof tag === 'string' ? tag : `Tag ${index + 1}`;
-                                const tagKey = typeof tag === 'string' ? tag.toLowerCase() : `tag${index}`;
-                                const val = ratings[tagKey] || 3.0;
-                                const accents = ['accent-primary', 'accent-secondary', 'accent-purple-500', 'accent-yellow-500'];
-
-                                return (
-                                    <div key={index}>
-                                        <div className="flex justify-between text-xs font-bold mb-1">
-                                            <span className="text-white uppercase">{tagStr}</span>
-                                            <span className="text-primary">{Number(val).toFixed(1)}</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="1"
-                                            max="5"
-                                            step="0.1"
-                                            value={val}
-                                            onChange={(e) => handleRatingChange(tagKey, e.target.value)}
-                                            className={`w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer ${accents[index % accents.length]}`}
-                                        />
-                                    </div>
-                                );
-                            })}
-                        </div>
-                        {/* Submit button removed as per request for mobile, assuming desktop should stay? Or remove for both? 
-                             User said "remove submit rating button" in the context of mobile changes. 
-                             I'll remove it for mobile (already done by structural change) and keep for desktop 
-                             unless implied otherwise. "in discover page when viewing in mobile... also remove submit rating button". 
-                             I will interpret strictly for mobile. Desktop can keep it or I'll remove it if it feels redundant without backend logic yet.
-                             Let's remove it entirely to be safe as auto-save is better UX. 
-                         */}
-                    </div>
-                )}
+                ) : null}
             </div>
 
             {/* Top Navigation */}

@@ -11,6 +11,7 @@ import { useVideo } from '../context/VideoContext';
 const Dashboard = () => {
     const { user, isLoaded } = useUser();
     const [mode, setMode] = useState('fan'); // 'fan' or 'creator'
+    const { getUserVideos } = useVideo();
 
     if (!isLoaded) {
         return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
@@ -128,7 +129,6 @@ const Dashboard = () => {
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             {/* Video Card */}
                             {(() => {
-                                const { getUserVideos } = useVideo();
                                 const userVideos = getUserVideos();
                                 const latestApprovedVideo = userVideos.find(v => v.status === 'approved');
 

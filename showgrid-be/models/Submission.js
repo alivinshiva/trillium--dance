@@ -12,7 +12,8 @@ const submissionSchema = new mongoose.Schema({
         type: String
     },
     challengeId: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Challenge',
         required: true
     },
     videoUrl: {
@@ -31,6 +32,10 @@ const submissionSchema = new mongoose.Schema({
         default: 'pending'
     },
     judgeTags: {
+        type: [String],
+        default: []
+    },
+    tags: {
         type: [String],
         default: []
     },

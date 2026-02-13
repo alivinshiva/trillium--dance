@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useVideo } from './context/VideoContext';
-import { Check, X, Shield, Plus, Calendar, Music, Layers, Search } from 'lucide-react';
+import { Check, X, Shield, Plus, Calendar, Music, Layers, Search, Trash2 } from 'lucide-react';
 
 const App = () => {
-  const { getPendingVideos, updateVideoStatus, addChallenge, challenges, getPresets } = useVideo();
+  const { getPendingVideos, updateVideoStatus, addChallenge, deleteChallenge, challenges, getPresets } = useVideo();
   const pendingVideos = getPendingVideos();
   const [activeTab, setActiveTab] = useState('reviews'); // 'reviews' or 'challenges'
 
@@ -143,12 +143,12 @@ const App = () => {
                   </div>
 
                   {/* Details */}
-                  <div className="p-6 flex-1">
+                  <div className="p-6 flex-1 flex flex-col">
                     <div className="flex items-center gap-3 mb-4">
                       <img src={video.userAvatar} alt={video.userName} className="w-10 h-10 rounded-full border border-white/20" />
                       <div>
                         <h4 className="font-bold text-sm">{video.userName}</h4>
-                        <span className="text-xs text-white/40">Uploaded {new Date(video.timestamp).toLocaleDateString()}</span>
+                        <span className="text-xs text-white/40">Uploaded {new Date(video.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
 
@@ -347,9 +347,22 @@ const App = () => {
                         <span key={i} className="text-[10px] bg-white/10 px-2 py-1 rounded text-white/70">#{tag}</span>
                       ))}
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] text-white/30">
-                      <Calendar size={12} />
-                      <span>{challenge.startDate} - {challenge.endDate}</span>
+                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/5">
+                      <div className="flex items-center gap-2 text-[10px] text-white/30">
+                        <Calendar size={12} />
+                        <span>{new Date(challenge.startDate).toLocaleDateString()} - {new Date(challenge.endDate).toLocaleDateString()}</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (confirm('Are you sure you want to delete this challenge? This action cannot be undone.')) {
+                            deleteChallenge(challenge._id);
+                          }
+                        }}
+                        className="text-red-500 hover:text-red-400 p-2 hover:bg-red-500/10 rounded-full transition-colors"
+                        title="Delete Challenge"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
                 ))}
