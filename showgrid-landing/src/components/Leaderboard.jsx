@@ -1,36 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { useVideo } from '../context/VideoContext';
-import { Crown, MapPin } from 'lucide-react';
+import { Crown, MapPin, Share2 } from 'lucide-react'; // Added Share2
+import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
 
 const Leaderboard = () => {
     const { user } = useUser();
+    const { challengeId } = useParams();
+    const navigate = useNavigate();
     const { challenges, getLeaderboard } = useVideo();
     const [stats, setStats] = useState([]);
-    const [selectedChallengeId, setSelectedChallengeId] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    // Initialize selection
+    // Sync URL with selection or default to first
     useEffect(() => {
-        if (challenges.length > 0 && !selectedChallengeId) {
-            setSelectedChallengeId(challenges[0]._id);
+        if (challenges.length > 0) {
+            if (!challengeId) {
+                // If no ID in URL, default to first and replace URL
+                navigate(`/leaderboard/${challenges[0]._id}`, { replace: true });
+            }
         }
-    }, [challenges, selectedChallengeId]);
+    }, [challenges, challengeId, navigate]);
 
-    // Fetch Leaderboard
+    // Fetch Leaderboard when challengeId changes
     useEffect(() => {
-        if (!selectedChallengeId) return;
+        if (!challengeId) return;
 
         const load = async () => {
             setLoading(true);
-            const data = await getLeaderboard(selectedChallengeId);
+            const data = await getLeaderboard(challengeId);
             setStats(data);
             setLoading(false);
         };
         load();
-    }, [selectedChallengeId, getLeaderboard]);
+    }, [challengeId, getLeaderboard]);
 
     // Top 3
     const top3 = stats.slice(0, 3);
@@ -48,16 +53,28 @@ const Leaderboard = () => {
                         </h1>
 
                         {/* Challenge Selector */}
-                        <div className="flex justify-center mb-6">
+                        <div className="flex justify-center items-center gap-4 mb-6">
                             <select
-                                value={selectedChallengeId || ''}
-                                onChange={(e) => setSelectedChallengeId(e.target.value)}
+                                value={challengeId || ''}
+                                onChange={(e) => navigate(`/leaderboard/${e.target.value}`)}
                                 className="bg-white/10 border border-white/20 text-white rounded-xl px-4 py-2 focus:outline-none focus:border-primary"
                             >
                                 {challenges.map(c => (
                                     <option key={c._id} value={c._id} className="bg-dark">{c.title}</option>
                                 ))}
                             </select>
+
+                            <button
+                                onClick={() => {
+                                    const url = window.location.href;
+                                    navigator.clipboard.writeText(url);
+                                    alert("Leaderboard link copied!");
+                                }}
+                                className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition-colors text-white/60 hover:text-white"
+                                title="Share Leaderboard"
+                            >
+                                <Share2 size={20} />
+                            </button>
                         </div>
                     </div>
 

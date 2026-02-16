@@ -81,6 +81,7 @@ function App() {
       />
       <Route path="/challenges" element={<Challenges />} />
       <Route path="/leaderboard" element={<Leaderboard />} />
+      <Route path="/leaderboard/:challengeId" element={<Leaderboard />} />
       {/* Discovered Page - Protected */}
       <Route
         path="/discovered"
