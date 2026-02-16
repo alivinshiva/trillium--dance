@@ -39,9 +39,9 @@ function App() {
       <Route path="/sign-in/*" element={<SignInPage />} />
       <Route path="/sign-up/*" element={<SignUpPage />} />
       {/* Upload Flow */}
-      <Route path="/upload" element={<UploadStep1 />} />
+      <Route path="/challenges/:challengeId/upload" element={<UploadStep1 />} />
       <Route
-        path="/upload/step-2"
+        path="/challenges/:challengeId/upload/step-2"
         element={
           <>
             <SignedIn>
@@ -54,7 +54,7 @@ function App() {
         }
       />
       <Route
-        path="/upload/step-3"
+        path="/challenges/:challengeId/upload/step-3"
         element={
           <>
             <SignedIn>
@@ -67,7 +67,7 @@ function App() {
         }
       />
       <Route
-        path="/upload/step-4"
+        path="/challenges/:challengeId/upload/step-4"
         element={
           <>
             <SignedIn>

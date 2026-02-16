@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Upload, X, ChevronRight, Check } from 'lucide-react';
 import { useVideo } from '../../context/VideoContext';
 import { useUser } from '@clerk/clerk-react';
@@ -7,8 +7,17 @@ import Navbar from '../Navbar';
 
 const UploadFinal = () => {
     const navigate = useNavigate();
-    const { addVideo, selectedChallenge } = useVideo();
+    const { challengeId } = useParams();
+    const { addVideo, selectedChallenge, challenges, setSelectedChallenge } = useVideo();
     const { user } = useUser();
+
+    // Restore selected challenge if missing
+    useEffect(() => {
+        if (!selectedChallenge && challenges.length > 0 && challengeId) {
+            const challenge = challenges.find(c => c._id === challengeId);
+            if (challenge) setSelectedChallenge(challenge);
+        }
+    }, [challengeId, challenges, selectedChallenge, setSelectedChallenge]);
 
     const [studioName, setStudioName] = useState('');
     const [city, setCity] = useState('');
@@ -142,7 +151,10 @@ const UploadFinal = () => {
             <Navbar />
 
             <div className="pt-32 pb-20 container max-w-4xl mx-auto">
-                <div className="mb-8">
+                <div className="mb-8 relative">
+                    <button onClick={() => navigate(`/challenges/${challengeId}/upload/step-3`)} className="absolute -top-10 left-0 flex items-center gap-2 text-white/40 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
+                        <ChevronRight size={14} className="rotate-180" /> Back to Step 3
+                    </button>
                     <p className="text-white/40 text-xs font-bold tracking-widest uppercase mb-2">Challenges / Studio Performance Upload</p>
                     <h1 className="text-4xl md:text-5xl font-extrabold mb-4">Submit Your Performance</h1>
                     <p className="text-white/60">Show the grid what your studio is made of. Let the dance do the talking.</p>

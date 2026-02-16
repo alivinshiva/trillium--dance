@@ -1,21 +1,30 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Play, Pause, Download, Volume2, RotateCcw, RotateCw, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
 import { useVideo } from '../../context/VideoContext';
 import Navbar from '../Navbar';
 
 const UploadStep2 = () => {
     const navigate = useNavigate();
-    const { selectedChallenge } = useVideo();
+    const { challengeId } = useParams();
+    const { challenges, selectedChallenge, setSelectedChallenge } = useVideo();
     const [isPlaying, setIsPlaying] = useState(false);
     const audioRef = useRef(null);
 
-    // If no challenge selected, redirect
+    // Restore selected challenge if missing (e.g. refresh)
     useEffect(() => {
-        if (!selectedChallenge) {
+        if (!selectedChallenge && challenges.length > 0 && challengeId) {
+            const challenge = challenges.find(c => c._id === challengeId);
+            if (challenge) setSelectedChallenge(challenge);
+        }
+    }, [challengeId, challenges, selectedChallenge, setSelectedChallenge]);
+
+    // If no challenge found after check, redirect
+    useEffect(() => {
+        if (!selectedChallenge && challenges.length > 0 && !challengeId) {
             navigate('/challenges');
         }
-    }, [selectedChallenge, navigate]);
+    }, [selectedChallenge, challengeId, challenges, navigate]);
 
     const togglePlay = () => {
         if (audioRef.current) {
@@ -155,13 +164,13 @@ const UploadStep2 = () => {
 
                 {/* Footer Nav */}
                 <div className="max-w-6xl mx-auto mt-12 flex justify-between items-center border-t border-white/10 pt-8">
-                    <button onClick={() => navigate('/challenges')} className="flex items-center gap-2 text-white/60 hover:text-white transition-colors">
-                        <ArrowRight size={20} className="rotate-180" /> Back to Challenges
+                    <button onClick={() => navigate(`/challenges/${challengeId}/upload`)} className="flex items-center gap-2 text-white/60 hover:text-white transition-colors">
+                        <ArrowRight size={20} className="rotate-180" /> Back to Step 1
                     </button>
                     <div className="flex items-center gap-4">
                         <span className="text-xs text-white/40">Reviewing accurate audio is mandatory</span>
                         <button
-                            onClick={() => navigate('/upload/step-3')}
+                            onClick={() => navigate(`/challenges/${challengeId}/upload/step-3`)}
                             className="btn btn-white px-8 py-3 rounded-xl font-bold text-black flex items-center gap-2 hover:bg-gray-200 transition-colors"
                         >
                             Next Step <ArrowRight size={20} />

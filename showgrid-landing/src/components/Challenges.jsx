@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
-import { Music, Trophy, ArrowRight, Calendar, Info } from 'lucide-react';
+import { Music, Trophy, ArrowRight, Calendar, Info, Share2 } from 'lucide-react';
 import { useVideo } from '../context/VideoContext';
 import Navbar from './Navbar';
 import Footer from './Footer';
@@ -18,7 +18,7 @@ const Challenges = () => {
             return;
         }
         setSelectedChallenge(challenge);
-        navigate('/upload');
+        navigate(`/challenges/${challenge._id}/upload`);
     };
 
     return (
@@ -97,13 +97,27 @@ const Challenges = () => {
                                                 <Calendar size={14} />
                                                 <span>Ends {new Date(challenge.endDate).toLocaleDateString()}</span>
                                             </div>
-                                            <button
-                                                onClick={() => !hasJoined && handleJoinChallenge(challenge)}
-                                                disabled={hasJoined}
-                                                className={`btn px-6 py-2 text-xs uppercase tracking-widest border-none ${hasJoined ? 'bg-white/10 text-white/50 cursor-not-allowed' : 'btn-white hover:bg-primary hover:text-white'}`}
-                                            >
-                                                {hasJoined ? 'Joined' : <>Join <ArrowRight size={16} /></>}
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const url = `${window.location.origin}/challenges/${challenge._id}/upload`;
+                                                        navigator.clipboard.writeText(url);
+                                                        alert("Challenge link copied to clipboard!");
+                                                    }}
+                                                    className="p-2 text-white/40 hover:text-white transition-colors"
+                                                    title="Share Challenge"
+                                                >
+                                                    <Share2 size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => !hasJoined && handleJoinChallenge(challenge)}
+                                                    disabled={hasJoined}
+                                                    className={`btn px-6 py-2 text-xs uppercase tracking-widest border-none ${hasJoined ? 'bg-white/10 text-white/50 cursor-not-allowed' : 'btn-white hover:bg-primary hover:text-white'}`}
+                                                >
+                                                    {hasJoined ? 'Joined' : <>Join <ArrowRight size={16} /></>}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 );

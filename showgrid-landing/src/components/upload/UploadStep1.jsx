@@ -1,18 +1,27 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
-import { Music, Video, Trophy, ChevronRight } from 'lucide-react';
+import { Music, Video, Trophy, ChevronRight, ArrowRight } from 'lucide-react';
 import { useVideo } from '../../context/VideoContext';
 import Navbar from '../Navbar';
+import { useEffect } from 'react';
 
 const UploadStep1 = () => {
     const { isSignedIn } = useUser();
     const navigate = useNavigate();
-    const { selectedChallenge } = useVideo();
+    const { challengeId } = useParams();
+    const { challenges, selectedChallenge, setSelectedChallenge } = useVideo();
+
+    useEffect(() => {
+        if (!selectedChallenge && challenges.length > 0 && challengeId) {
+            const challenge = challenges.find(c => c._id === challengeId);
+            if (challenge) setSelectedChallenge(challenge);
+        }
+    }, [challengeId, challenges, selectedChallenge, setSelectedChallenge]);
 
     const handleNext = () => {
-        if (selectedChallenge) {
-            navigate('/upload/step-2');
+        if (selectedChallenge || challengeId) {
+            navigate(`/challenges/${challengeId}/upload/step-2`);
         } else {
             navigate('/challenges');
         }
@@ -21,6 +30,10 @@ const UploadStep1 = () => {
     return (
         <div className="min-h-screen bg-dark-lighter bg-gradient-to-b from-dark-lighter to-[#050505] pt-0 pb-12 text-white text-center relative">
             <Navbar />
+
+
+
+
             <div className="pt-24 container">
                 {/* Progress */}
                 <div className="max-w-xl mx-auto mb-16">
@@ -67,11 +80,13 @@ const UploadStep1 = () => {
                         </div>
                     </div>
 
-                    <div className="flex flex-col items-center gap-4">
-                        <button className="btn btn-primary px-12 py-3 text-lg uppercase tracking-widest" onClick={handleNext}>
+                    <div className="flex flex-col-reverse md:flex-row items-center justify-center gap-6 mt-8">
+                        <button onClick={() => navigate('/challenges')} className="flex items-center gap-2 text-white/60 hover:text-white transition-colors py-3 px-6">
+                            <ArrowRight size={20} className="rotate-180" /> Back to Battles
+                        </button>
+                        <button className="btn btn-primary px-12 py-3 text-lg uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all flex items-center gap-2" onClick={handleNext}>
                             NEXT <ChevronRight size={20} />
                         </button>
-                        <div className="text-[10px] tracking-[0.2em] opacity-30 uppercase font-bold">VARIANT 1 OF 3</div>
                     </div>
                 </div>
             </div>

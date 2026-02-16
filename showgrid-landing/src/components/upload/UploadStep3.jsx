@@ -1,10 +1,21 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Zap, Activity, Repeat, ArrowRight, Lock } from 'lucide-react';
+import { useVideo } from '../../context/VideoContext';
 import Navbar from '../Navbar';
 
 const UploadStep3 = () => {
     const navigate = useNavigate();
+    const { challengeId } = useParams();
+    const { challenges, selectedChallenge, setSelectedChallenge } = useVideo();
+
+    // Restore selected challenge if missing
+    useEffect(() => {
+        if (!selectedChallenge && challenges.length > 0 && challengeId) {
+            const challenge = challenges.find(c => c._id === challengeId);
+            if (challenge) setSelectedChallenge(challenge);
+        }
+    }, [challengeId, challenges, selectedChallenge, setSelectedChallenge]);
 
     return (
         <div className="min-h-screen bg-dark text-white">
@@ -72,7 +83,7 @@ const UploadStep3 = () => {
 
                         <div className="mt-12">
                             <button
-                                onClick={() => navigate('/upload/step-4')}
+                                onClick={() => navigate(`/challenges/${challengeId}/upload/step-4`)}
                                 className="w-full btn btn-primary py-4 text-xl font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all"
                             >
                                 Let's Go: Upload Now <ArrowRight size={24} />
@@ -161,6 +172,16 @@ const UploadStep3 = () => {
                     <p className="text-white/40 text-sm leading-relaxed">
                         Detailed analytics for every beat. Tracking your growth from local talent to global superstar.
                     </p>
+                </div>
+
+                {/* Footer Nav */}
+                <div className="max-w-6xl mx-auto mt-12 flex justify-between items-center border-t border-white/10 pt-8">
+                    <button onClick={() => navigate(`/challenges/${challengeId}/upload/step-2`)} className="flex items-center gap-2 text-white/60 hover:text-white transition-colors">
+                        <ArrowRight size={20} className="rotate-180" /> Back to Audio
+                    </button>
+                    <button onClick={() => navigate('/challenges')} className="text-xs font-bold text-white/40 hover:text-white uppercase tracking-widest">
+                        Cancel & Return to Battles
+                    </button>
                 </div>
             </div>
         </div>
