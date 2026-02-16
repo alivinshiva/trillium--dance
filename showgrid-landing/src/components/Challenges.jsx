@@ -45,9 +45,12 @@ const Challenges = () => {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {challenges.map((challenge) => {
-                                const hasJoined = userVideos.some(v => v.challengeId === challenge._id);
+                                const hasJoined = userVideos.some(v => {
+                                    const cId = v.challengeId && v.challengeId._id ? v.challengeId._id : v.challengeId;
+                                    return cId === challenge._id;
+                                });
                                 return (
-                                    <div key={challenge._id} className="group bg-white/5 border border-white/10 rounded-3xl overflow-hidden hover:border-primary/50 transition-all duration-300 hover:-translate-y-2 flex flex-col relative">
+                                    <div key={challenge._id} className={`group bg-white/5 border border-white/10 rounded-3xl overflow-hidden transition-all duration-300 flex flex-col relative ${hasJoined ? 'opacity-50 grayscale' : 'hover:border-primary/50 hover:-translate-y-2'}`}>
                                         {/* Banner Image Background */}
                                         {challenge.coverUrl ? (
                                             <>
@@ -95,10 +98,11 @@ const Challenges = () => {
                                                 <span>Ends {new Date(challenge.endDate).toLocaleDateString()}</span>
                                             </div>
                                             <button
-                                                onClick={() => handleJoinChallenge(challenge)}
-                                                className="btn btn-white px-6 py-2 text-xs uppercase tracking-widest hover:bg-primary hover:text-white border-none"
+                                                onClick={() => !hasJoined && handleJoinChallenge(challenge)}
+                                                disabled={hasJoined}
+                                                className={`btn px-6 py-2 text-xs uppercase tracking-widest border-none ${hasJoined ? 'bg-white/10 text-white/50 cursor-not-allowed' : 'btn-white hover:bg-primary hover:text-white'}`}
                                             >
-                                                Join <ArrowRight size={16} />
+                                                {hasJoined ? 'Joined' : <>Join <ArrowRight size={16} /></>}
                                             </button>
                                         </div>
                                     </div>

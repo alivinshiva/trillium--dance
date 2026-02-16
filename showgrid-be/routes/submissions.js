@@ -1,7 +1,72 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Submission = require('../models/Submission');
+const { VideoRatingAggregate } = require('../models/Interaction');
 const { upload } = require('../config/cloudinary');
+
+// GET Leaderboard (Submissions sorted by rating)
+router.get('/leaderboard', async (req, res) => {
+    try {
+        const { challengeId } = req.query;
+        const limit = parseInt(req.query.limit) || 100;
+
+        const pipeline = [];
+
+        // 1. Filter by challenge if provided
+        if (challengeId) {
+            pipeline.push({
+                $match: {
+                    challengeId: new mongoose.Types.ObjectId(challengeId)
+                }
+            });
+        }
+
+        // 2. Lookup Rating Aggregate
+        pipeline.push({
+            $lookup: {
+                from: 'videoratingaggregates',
+                localField: '_id',
+                foreignField: '_id',
+                as: 'ratingStats'
+            }
+        });
+
+        // 3. Unwind (preserve nulls)
+        pipeline.push({
+            $unwind: {
+                path: '$ratingStats',
+                preserveNullAndEmptyArrays: true
+            }
+        });
+
+        // 4. Add computed fields
+        pipeline.push({
+            $addFields: {
+                averageRating: { $ifNull: ['$ratingStats.average', 0] },
+                ratingCount: { $ifNull: ['$ratingStats.count', 0] }
+            }
+        });
+
+        // 5. Sort
+        pipeline.push({
+            $sort: {
+                averageRating: -1,
+                ratingCount: -1,
+                createdAt: -1
+            }
+        });
+
+        // 6. Limit
+        pipeline.push({ $limit: limit });
+
+        const leaderboard = await Submission.aggregate(pipeline);
+        res.json(leaderboard);
+
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
 
 // GET submissions
 router.get('/', async (req, res) => {

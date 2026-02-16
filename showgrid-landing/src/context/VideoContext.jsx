@@ -122,6 +122,64 @@ export const VideoProvider = ({ children }) => {
         }
     };
 
+    // --- Interactions ---
+
+    const likeVideo = async (videoId) => {
+        try {
+            const res = await fetch(`${API_URL}/interactions/like`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ videoId, userId: user.id })
+            });
+            if (!res.ok) throw new Error('Failed to like video');
+            return await res.json(); // { liked: boolean }
+        } catch (err) {
+            console.error("Error liking video:", err);
+            throw err;
+        }
+    };
+
+    const rateVideo = async (videoId, rating) => {
+        try {
+            const res = await fetch(`${API_URL}/interactions/rate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ videoId, userId: user.id, rating })
+            });
+            if (!res.ok) throw new Error('Failed to rate video');
+            return await res.json(); // { success: true, rating, average }
+        } catch (err) {
+            console.error("Error rating video:", err);
+            throw err;
+        }
+    };
+
+    const shareVideo = async (videoId, targetType = 'external') => {
+        try {
+            await fetch(`${API_URL}/interactions/share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ videoId, userId: user.id, targetType })
+            });
+        } catch (err) {
+            console.error("Error sharing video:", err);
+        }
+    };
+
+    const getVideoStats = async (videoId) => {
+        try {
+            const url = new URL(`${API_URL}/interactions/video/${videoId}`);
+            if (user) url.searchParams.append('userId', user.id);
+
+            const res = await fetch(url);
+            if (res.ok) return await res.json();
+            return null;
+        } catch (err) {
+            console.error("Error fetching video stats:", err);
+            return null;
+        }
+    };
+
     const getApprovedVideos = () => videos.filter(v => v.status === 'approved');
     const getPendingVideos = () => videos.filter(v => v.status === 'pending');
 
@@ -130,7 +188,6 @@ export const VideoProvider = ({ children }) => {
         return videos.filter(v => v.userId === user.id);
     };
 
-    // Get Presets from Backend
     const getPresets = async () => {
         try {
             const res = await fetch(`${API_URL}/challenges/presets`);
@@ -142,6 +199,20 @@ export const VideoProvider = ({ children }) => {
         } catch (err) {
             console.error("Error fetching presets:", err);
             return { positive: [], neutral: [], negative: [] };
+        }
+    };
+
+    const getLeaderboard = async (challengeId) => {
+        try {
+            let url = `${API_URL}/submissions/leaderboard`;
+            if (challengeId) url += `?challengeId=${challengeId}`;
+
+            const res = await fetch(url);
+            if (res.ok) return await res.json();
+            return [];
+        } catch (err) {
+            console.error("Error fetching leaderboard:", err);
+            return [];
         }
     };
 
@@ -157,7 +228,12 @@ export const VideoProvider = ({ children }) => {
             getPresets,
             challenges,
             selectedChallenge,
-            setSelectedChallenge
+            setSelectedChallenge,
+            likeVideo,
+            rateVideo,
+            shareVideo,
+            getVideoStats,
+            getLeaderboard
         }}>
             {children}
         </VideoContext.Provider>
