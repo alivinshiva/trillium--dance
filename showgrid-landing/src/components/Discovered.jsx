@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useVideo } from '../context/VideoContext';
 import { useUser } from '@clerk/clerk-react';
 import { Play, Heart, MessageCircle, Share2, Music, ChevronUp, ChevronDown, Check, Home, Trophy, BarChart2, User } from 'lucide-react';
@@ -103,14 +103,23 @@ const Discovered = () => {
         loadPresets();
     }, [getPresets, currentVideo]);
 
+    const navigate = useNavigate();
+
     useEffect(() => {
         const approvedVideos = getApprovedVideos();
         setVideos(approvedVideos);
-        if (initialVideoId) {
+        if (initialVideoId && approvedVideos.length > 0) {
             const index = approvedVideos.findIndex(v => v._id === initialVideoId);
             if (index !== -1) setCurrentIndex(index);
         }
     }, [getApprovedVideos, initialVideoId]);
+
+    // Update URL when current video changes
+    useEffect(() => {
+        if (currentVideo) {
+            navigate(`/discovered/feed/${currentVideo._id}`, { replace: true });
+        }
+    }, [currentVideo, navigate]);
 
     const handleNext = () => { if (currentIndex < videos.length - 1) setCurrentIndex(prev => prev + 1); };
     const handlePrev = () => { if (currentIndex > 0) setCurrentIndex(prev => prev - 1); };

@@ -46,9 +46,9 @@ export const VideoProvider = ({ children }) => {
         };
         fetchVideos();
 
-        // Poll for updates
-        const interval = setInterval(fetchVideos, 10000);
-        return () => clearInterval(interval);
+        // Polling removed to prevent excessive API calls
+        // const interval = setInterval(fetchVideos, 10000);
+        // return () => clearInterval(interval);
     }, []);
 
 
