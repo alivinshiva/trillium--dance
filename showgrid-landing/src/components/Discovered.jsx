@@ -174,33 +174,101 @@ const Discovered = () => {
 
             {/* Main Content Area */}
             <div className="flex-grow relative flex justify-center bg-black">
-                {/* Desktop Rating Panel (Left of Video) */}
+                {/* Desktop Overlays */}
                 {!isMobile && (
-                    <div className="absolute left-8 top-1/2 -translate-y-1/2 z-30 w-72">
-                        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-2xl">
-                            <h3 className="text-sm font-bold text-white mb-6 uppercase tracking-wider text-center">Live Rating</h3>
-                            <div className="space-y-6">
-                                {displayTags.map((tag, index) => {
-                                    const tagStr = typeof tag === 'string' ? tag : `Tag ${index + 1}`;
-                                    const tagKey = typeof tag === 'string' ? tag.toLowerCase() : `tag${index}`;
-                                    const val = ratings[tagKey] || 3.0;
-                                    const accents = ['accent-cyan-400', 'accent-fuchsia-500', 'accent-lime-400', 'accent-yellow-400'];
-                                    const glowColor = ['shadow-[0_0_10px_rgba(34,211,238,0.8)]', 'shadow-[0_0_10px_rgba(217,70,239,0.8)]', 'shadow-[0_0_10px_rgba(163,230,53,0.8)]', 'shadow-[0_0_10px_rgba(250,204,21,0.8)]'];
-                                    return (
-                                        <div key={index}>
-                                            <div className="flex justify-between text-xs font-bold mb-2">
-                                                <span className="text-white uppercase">{tagStr}</span>
-                                                <span className="text-primary">{Number(val).toFixed(0)}</span>
-                                            </div>
-                                            <input type="range" min="1" max="5" step="1" value={val}
-                                                onChange={(e) => handleRatingChange(tagKey, e.target.value)}
-                                                className={`w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer ${accents[index % accents.length]} ${glowColor[index % glowColor.length]}`} />
-                                        </div>
-                                    );
-                                })}
+                    <>
+                        {/* Bottom-Left Info Overlay */}
+                        <div className="absolute left-8 bottom-8 z-30 max-w-md text-left shadow-black drop-shadow-lg pointer-events-none">
+                            <div className="bg-black/20 backdrop-blur-sm p-6 rounded-3xl border border-white/5 pointer-events-auto">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-1 h-4 bg-primary rounded-full"></div>
+                                    <h4 className="text-xs font-bold text-white/80 uppercase tracking-widest">
+                                        {currentVideo.challengeId?.title || 'Challenge'}
+                                    </h4>
+                                </div>
+                                <h2 className="text-3xl font-extrabold text-white mb-4 leading-tight">
+                                    @{currentVideo.userName}
+                                </h2>
+                                <div className="flex flex-wrap gap-2">
+                                    {displayTags.map((tag, i) => (
+                                        <span key={i} className="px-3 py-1 bg-white/10 rounded-full text-xs font-bold text-white/90 backdrop-blur-md border border-white/5">
+                                            #{typeof tag === 'string' ? tag.replace(/\s+/g, '') : `Tag${i + 1}`}
+                                        </span>
+                                    ))}
+                                </div>
+                                {currentVideo.description && (
+                                    <p className="border-t border-white/10 mt-4 pt-3 text-sm text-white/60 line-clamp-2">
+                                        {currentVideo.description}
+                                    </p>
+                                )}
                             </div>
                         </div>
-                    </div>
+
+                        {/* Right-Side Actions & Rating */}
+                        <div className="absolute right-8 top-1/2 -translate-y-1/2 z-30 flex items-center gap-6">
+
+                            {/* Rating Card (Left of Buttons) */}
+                            <div className="bg-black/40 backdrop-blur-md border border-white/10 p-5 rounded-2xl w-64 shadow-xl">
+                                <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+                                    <h3 className="text-xs font-bold text-white uppercase tracking-wider">Live Rating</h3>
+                                    <div className="flex gap-1">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
+                                        <span className="text-[10px] font-bold text-red-500 uppercase">Rec</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-5">
+                                    {displayTags.map((tag, index) => {
+                                        const tagStr = typeof tag === 'string' ? tag : `Tag ${index + 1}`;
+                                        const tagKey = typeof tag === 'string' ? tag.toLowerCase() : `tag${index}`;
+                                        const val = ratings[tagKey] || 3.0;
+                                        const accents = ['accent-cyan-400', 'accent-fuchsia-500', 'accent-lime-400', 'accent-yellow-400'];
+                                        const glowColor = ['shadow-[0_0_10px_rgba(34,211,238,0.5)]', 'shadow-[0_0_10px_rgba(217,70,239,0.5)]', 'shadow-[0_0_10px_rgba(163,230,53,0.5)]', 'shadow-[0_0_10px_rgba(250,204,21,0.5)]'];
+                                        return (
+                                            <div key={index}>
+                                                <div className="flex justify-between text-[10px] font-bold mb-1.5">
+                                                    <span className="text-white/80 uppercase tracking-wide">{tagStr}</span>
+                                                    <span className="text-white bg-white/10 px-1.5 rounded text-[10px]">{Number(val).toFixed(0)}</span>
+                                                </div>
+                                                <input type="range" min="1" max="5" step="1" value={val}
+                                                    onChange={(e) => handleRatingChange(tagKey, e.target.value)}
+                                                    className={`w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer ${accents[index % accents.length]} ${glowColor[index % glowColor.length]}`} />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Vertical Action Buttons */}
+                            <div className="flex flex-col gap-4">
+                                <button onClick={handlePrev} disabled={currentIndex === 0} className="p-3 bg-white/5 rounded-full hover:bg-white/20 disabled:opacity-0 transition-all self-center mb-2">
+                                    <ChevronUp size={24} color="white" />
+                                </button>
+
+                                <div className="flex flex-col items-center gap-1 group">
+                                    <div onClick={handleLike} className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center hover:bg-white/20 hover:scale-110 cursor-pointer transition-all shadow-lg">
+                                        <Heart size={24} fill={userInteraction.hasLiked ? "#ec4899" : "transparent"} color={userInteraction.hasLiked ? "#ec4899" : "white"} />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-white shadow-black drop-shadow-md">{interactionStats.likes}</span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 group">
+                                    <div onClick={() => setShowComments(true)} className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center hover:bg-white/20 hover:scale-110 cursor-pointer transition-all shadow-lg">
+                                        <MessageCircle size={24} color="white" />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-white shadow-black drop-shadow-md">{interactionStats.comments}</span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 group">
+                                    <div onClick={() => shareVideo(currentVideo._id)} className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center hover:bg-white/20 hover:scale-110 cursor-pointer transition-all shadow-lg">
+                                        <Share2 size={24} color="white" />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-white shadow-black drop-shadow-md">{interactionStats.shares}</span>
+                                </div>
+
+                                <button onClick={handleNext} disabled={currentIndex === videos.length - 1} className="p-3 bg-white/5 rounded-full hover:bg-white/20 disabled:opacity-0 transition-all self-center mt-2">
+                                    <ChevronDown size={24} color="white" />
+                                </button>
+                            </div>
+                        </div>
+                    </>
                 )}
 
                 {/* Video Player Container */}
@@ -267,34 +335,6 @@ const Discovered = () => {
                         </div>
                     )}
                 </div>
-
-                {/* Desktop Actions (Right Side) */}
-                {!isMobile && (
-                    <div className="absolute right-8 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-6">
-                        <button onClick={handlePrev} disabled={currentIndex === 0} className="p-3 bg-white/10 rounded-full hover:bg-white/20 disabled:opacity-30 self-center mb-4"><ChevronUp size={24} color="white" /></button>
-
-                        <div className="flex flex-col items-center gap-2">
-                            <div onClick={handleLike} className="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 cursor-pointer transition-all">
-                                <Heart size={28} fill={userInteraction.hasLiked ? "#ec4899" : "transparent"} color={userInteraction.hasLiked ? "#ec4899" : "white"} />
-                            </div>
-                            <span className="text-xs font-bold text-white">{interactionStats.likes}</span>
-                        </div>
-                        <div className="flex flex-col items-center gap-2">
-                            <div onClick={() => setShowComments(true)} className="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 cursor-pointer transition-all">
-                                <MessageCircle size={28} color="white" />
-                            </div>
-                            <span className="text-xs font-bold text-white">{interactionStats.comments}</span>
-                        </div>
-                        <div className="flex flex-col items-center gap-2">
-                            <div onClick={() => shareVideo(currentVideo._id)} className="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 cursor-pointer transition-all">
-                                <Share2 size={28} color="white" />
-                            </div>
-                            <span className="text-xs font-bold text-white">{interactionStats.shares}</span>
-                        </div>
-
-                        <button onClick={handleNext} disabled={currentIndex === videos.length - 1} className="p-3 bg-white/10 rounded-full hover:bg-white/20 disabled:opacity-30 self-center mt-4"><ChevronDown size={24} color="white" /></button>
-                    </div>
-                )}
             </div>
 
             {/* Comments Modal (Keeping as is, just ensuring visibility) */}
