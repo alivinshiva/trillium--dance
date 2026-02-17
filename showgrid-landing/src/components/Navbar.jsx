@@ -3,9 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Play, Home, Trophy, BarChart2, User, Zap, Bell } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
+import { useNotification } from '../context/NotificationContext';
 
 const Navbar = () => {
   const { isSignedIn, user } = useUser();
+  const { unreadCount, togglePanel } = useNotification();
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -36,8 +38,8 @@ const Navbar = () => {
       {/* Top Navbar */}
       <nav
         className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${isScrolled
-            ? 'py-2 bg-black/90 backdrop-blur-md border-b border-white/10'
-            : 'py-3 bg-gradient-to-b from-black/30 to-transparent'
+          ? 'py-2 bg-black/90 backdrop-blur-md border-b border-white/10'
+          : 'py-3 bg-gradient-to-b from-black/30 to-transparent'
           } ${isSidebarPage ? 'md:hidden' : ''}`}
       >
         <div className="container mx-auto px-4 max-w-7xl">
@@ -78,8 +80,16 @@ const Navbar = () => {
                   @{user.username || user.firstName || 'User'}
                 </div>
               ) : (
-                <button className="text-white/80 hover:text-white p-1 -ml-1">
+                <button
+                  onClick={togglePanel}
+                  className="text-white/80 hover:text-white p-1 -ml-1 relative"
+                >
                   <Bell size={18} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-black flex items-center justify-center text-[8px] font-bold text-white">
+                      {unreadCount}
+                    </span>
+                  )}
                 </button>
               )}
             </div>

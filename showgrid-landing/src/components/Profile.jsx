@@ -2,15 +2,25 @@ import { Link } from 'react-router-dom';
 import { useUser, SignOutButton } from '@clerk/clerk-react';
 import {
     Home, Trophy, BarChart2, User, Settings, Edit, MapPin, Zap,
-    LogOut, ChevronRight, Star, ExternalLink, Check, Trash2
+    LogOut, ChevronRight, Star, ExternalLink, Check, Trash2, Bell, Share2
 } from 'lucide-react';
 import Navbar from './Navbar';
 import { useVideo } from '../context/VideoContext';
+import { useNotification } from '../context/NotificationContext';
 
 const Profile = () => {
     const { user, isLoaded } = useUser();
-    const { getUserVideos, deleteVideo } = useVideo();
+    const { getUserVideos, deleteVideo, getPublicVideoUrl } = useVideo();
+    const { unreadCount, togglePanel } = useNotification();
     const userVideos = getUserVideos();
+
+    const handleShare = (e, videoId) => {
+        e.preventDefault(); // Prevent grid item click
+        e.stopPropagation();
+        const url = getPublicVideoUrl(videoId);
+        navigator.clipboard.writeText(url);
+        alert("Link copied to clipboard!");
+    };
 
     if (!isLoaded) {
         return (
@@ -60,6 +70,23 @@ const Profile = () => {
                     <div className="flex items-center gap-3 px-4 py-3 bg-white/10 text-white rounded-xl font-bold cursor-default">
                         <User size={20} className="text-primary" /> My Profile
                     </div>
+                    <button
+                        onClick={togglePanel}
+                        className="flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-colors w-full text-left"
+                    >
+                        <div className="relative">
+                            <Bell size={20} />
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-black"></span>
+                            )}
+                        </div>
+                        Notifications
+                        {unreadCount > 0 && (
+                            <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                {unreadCount}
+                            </span>
+                        )}
+                    </button>
                     <a href="#settings" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
                         <Settings size={20} /> Settings
                     </a>
@@ -240,6 +267,13 @@ const Profile = () => {
                                     <div className="p-4">
                                         <div className="flex justify-between items-start mb-1">
                                             <h4 className="font-bold text-sm truncate flex-1">{video.userName}</h4>
+                                            <button
+                                                onClick={(e) => handleShare(e, video._id)}
+                                                className="text-white/20 hover:text-white transition-colors p-1"
+                                                title="Share Video"
+                                            >
+                                                <Share2 size={14} />
+                                            </button>
                                             <button
                                                 onClick={(e) => {
                                                     e.preventDefault(); // Prevent navigation

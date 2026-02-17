@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useVideo } from '../context/VideoContext';
-import { useUser } from '@clerk/clerk-react';
-import { Play, Heart, MessageCircle, Share2, Music, ChevronUp, ChevronDown, Check, Home, Trophy, BarChart2, User } from 'lucide-react';
+import { useUser, useClerk } from '@clerk/clerk-react';
+import { Play, Heart, MessageCircle, Share2, Music, ChevronUp, ChevronDown, Check, Home, Trophy, BarChart2, User, Lock } from 'lucide-react';
 import Navbar from './Navbar';
 
 
 
 const Discovered = () => {
-    const { getApprovedVideos, getPresets, addComment, likeVideo, rateVideo, shareVideo, getVideoStats } = useVideo();
+    const { getApprovedVideos, getPresets, addComment, likeVideo, rateVideo, shareVideo, getVideoStats, getPublicVideoUrl } = useVideo();
     const { initialVideoId } = useParams();
     const { user } = useUser();
+    const { openSignIn } = useClerk();
 
     // Main State
     const [videos, setVideos] = useState([]);
@@ -42,7 +43,7 @@ const Discovered = () => {
     }, [currentVideo, getVideoStats, user]);
 
     const handleLike = async () => {
-        if (!user) return alert("Please sign in to like");
+        if (!user) return openSignIn();
         const wasLiked = userInteraction.hasLiked;
         setUserInteraction(prev => ({ ...prev, hasLiked: !wasLiked }));
         setInteractionStats(prev => ({ ...prev, likes: prev.likes + (wasLiked ? -1 : 1) }));
@@ -121,8 +122,14 @@ const Discovered = () => {
         }
     }, [currentVideo, navigate]);
 
-    const handleNext = () => { if (currentIndex < videos.length - 1) setCurrentIndex(prev => prev + 1); };
-    const handlePrev = () => { if (currentIndex > 0) setCurrentIndex(prev => prev - 1); };
+    const handleNext = () => {
+        if (!user) return openSignIn();
+        if (currentIndex < videos.length - 1) setCurrentIndex(prev => prev + 1);
+    };
+    const handlePrev = () => {
+        if (!user) return openSignIn();
+        if (currentIndex > 0) setCurrentIndex(prev => prev - 1);
+    };
 
     const togglePlay = () => {
         if (videoRef.current) {
@@ -133,13 +140,21 @@ const Discovered = () => {
     };
 
     const handlePresetComment = async (text, type) => {
-        if (!user || !currentVideo) return;
+        if (!user) return openSignIn();
+        if (!currentVideo) return;
         try {
             await addComment(currentVideo._id, {
                 userId: user.id, userName: user.fullName || user.username, userAvatar: user.imageUrl, text, type
             });
             setShowComments(false);
         } catch (err) { console.error("Failed to post comment", err); }
+    };
+
+    const handleShare = (videoId) => {
+        shareVideo(videoId);
+        const url = getPublicVideoUrl(videoId);
+        navigator.clipboard.writeText(url);
+        alert("Link copied to clipboard!");
     };
 
     // Mobile Check
@@ -161,6 +176,13 @@ const Discovered = () => {
 
     return (
         <div className="h-screen w-full bg-black overflow-hidden relative flex">
+            {/* Unauthenticated Overlay Hint */}
+            {!user && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 flex items-center gap-2 pointer-events-none">
+                    <Lock size={14} className="text-white/60" />
+                    <span className="text-xs font-bold text-white/80">Sign in to interact & scroll</span>
+                </div>
+            )}
             {/* Desktop Navbar / Sidebar (Left) */}
             {!isMobile && (
                 <div className="w-20 h-full flex flex-col items-center py-6 gap-8 bg-black/40 backdrop-blur-md border-r border-white/10 z-30">
@@ -257,16 +279,16 @@ const Discovered = () => {
                                     <span className="text-[10px] font-bold text-white shadow-black drop-shadow-md">{interactionStats.comments}</span>
                                 </div>
                                 <div className="flex flex-col items-center gap-1 group">
-                                    <div onClick={() => shareVideo(currentVideo._id)} className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center hover:bg-white/20 hover:scale-110 cursor-pointer transition-all shadow-lg">
+                                    <div onClick={() => handleShare(currentVideo._id)} className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center hover:bg-white/20 hover:scale-110 cursor-pointer transition-all shadow-lg">
                                         <Share2 size={24} color="white" />
                                     </div>
                                     <span className="text-[10px] font-bold text-white shadow-black drop-shadow-md">{interactionStats.shares}</span>
                                 </div>
-
-                                <button onClick={handleNext} disabled={currentIndex === videos.length - 1} className="p-3 bg-white/5 rounded-full hover:bg-white/20 disabled:opacity-0 transition-all self-center mt-2">
-                                    <ChevronDown size={24} color="white" />
-                                </button>
                             </div>
+
+                            <button onClick={handleNext} disabled={currentIndex === videos.length - 1} className="p-3 bg-white/5 rounded-full hover:bg-white/20 disabled:opacity-0 transition-all self-center mt-2">
+                                <ChevronDown size={24} color="white" />
+                            </button>
                         </div>
                     </>
                 )}
@@ -322,11 +344,11 @@ const Discovered = () => {
                                         <Heart size={24} fill={userInteraction.hasLiked ? "#ec4899" : "transparent"} color={userInteraction.hasLiked ? "#ec4899" : "white"} />
                                         <span className="text-[10px] font-bold text-white">{interactionStats.likes}</span>
                                     </div>
-                                    <div className="flex flex-col items-center gap-1" onClick={() => setShowComments(true)}>
+                                    <div className="flex flex-col items-center gap-1" onClick={() => user ? setShowComments(true) : openSignIn()}>
                                         <MessageCircle size={24} color="white" />
                                         <span className="text-[10px] font-bold text-white">{interactionStats.comments}</span>
                                     </div>
-                                    <div className="flex flex-col items-center gap-1" onClick={() => shareVideo(currentVideo._id)}>
+                                    <div className="flex flex-col items-center gap-1" onClick={() => handleShare(currentVideo._id)}>
                                         <Share2 size={24} color="white" />
                                         <span className="text-[10px] font-bold text-white">{interactionStats.shares}</span>
                                     </div>
@@ -338,59 +360,61 @@ const Discovered = () => {
             </div>
 
             {/* Comments Modal (Keeping as is, just ensuring visibility) */}
-            {showComments && (
-                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-[#111] border border-white/10 w-full max-w-md rounded-3xl p-6 relative">
-                        <button onClick={() => setShowComments(false)} className="absolute top-4 right-4 text-white/40 hover:text-white"><ChevronDown /></button>
-                        <h3 className="text-xl font-bold text-white mb-4">Comments</h3>
-                        {/* Simplified Comment UI for Brevity - Presets logic retained from state */}
-                        <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-                            {/* Positive */}
-                            {commentPresets.positive && commentPresets.positive.length > 0 && (
-                                <div>
-                                    <h4 className="text-xs font-bold text-green-400 uppercase tracking-wider mb-2">Hype Them Up!</h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {commentPresets.positive.map((text, i) => (
-                                            <button key={i} onClick={() => handlePresetComment(text, 'positive')} className="text-xs px-3 py-2 bg-green-500/10 border border-green-500/30 rounded-full text-green-100 hover:bg-green-500/20">{text}</button>
-                                        ))}
+            {
+                showComments && (
+                    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="bg-[#111] border border-white/10 w-full max-w-md rounded-3xl p-6 relative">
+                            <button onClick={() => setShowComments(false)} className="absolute top-4 right-4 text-white/40 hover:text-white"><ChevronDown /></button>
+                            <h3 className="text-xl font-bold text-white mb-4">Comments</h3>
+                            {/* Simplified Comment UI for Brevity - Presets logic retained from state */}
+                            <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+                                {/* Positive */}
+                                {commentPresets.positive && commentPresets.positive.length > 0 && (
+                                    <div>
+                                        <h4 className="text-xs font-bold text-green-400 uppercase tracking-wider mb-2">Hype Them Up!</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {commentPresets.positive.map((text, i) => (
+                                                <button key={i} onClick={() => handlePresetComment(text, 'positive')} className="text-xs px-3 py-2 bg-green-500/10 border border-green-500/30 rounded-full text-green-100 hover:bg-green-500/20">{text}</button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {/* Neutral */}
-                            {commentPresets.neutral && commentPresets.neutral.length > 0 && (
-                                <div>
-                                    <h4 className="text-xs font-bold text-yellow-400 uppercase tracking-wider mb-2">Observations</h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {commentPresets.neutral.map((text, i) => (
-                                            <button key={i} onClick={() => handlePresetComment(text, 'neutral')} className="text-xs px-3 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-100 hover:bg-yellow-500/20">{text}</button>
-                                        ))}
+                                {/* Neutral */}
+                                {commentPresets.neutral && commentPresets.neutral.length > 0 && (
+                                    <div>
+                                        <h4 className="text-xs font-bold text-yellow-400 uppercase tracking-wider mb-2">Observations</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {commentPresets.neutral.map((text, i) => (
+                                                <button key={i} onClick={() => handlePresetComment(text, 'neutral')} className="text-xs px-3 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-100 hover:bg-yellow-500/20">{text}</button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {/* Negative */}
-                            {commentPresets.negative && commentPresets.negative.length > 0 && (
-                                <div>
-                                    <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">Constructive</h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {commentPresets.negative.map((text, i) => (
-                                            <button key={i} onClick={() => handlePresetComment(text, 'negative')} className="text-xs px-3 py-2 bg-purple-500/10 border border-purple-500/30 rounded-full text-purple-100 hover:bg-purple-500/20">{text}</button>
-                                        ))}
+                                {/* Negative */}
+                                {commentPresets.negative && commentPresets.negative.length > 0 && (
+                                    <div>
+                                        <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">Constructive</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {commentPresets.negative.map((text, i) => (
+                                                <button key={i} onClick={() => handlePresetComment(text, 'negative')} className="text-xs px-3 py-2 bg-purple-500/10 border border-purple-500/30 rounded-full text-purple-100 hover:bg-purple-500/20">{text}</button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Mobile Nav logic handled by Navbar component externally usually, but if we want strictly full custom layout we might need to suppress it. 
                 However, Navbar.jsx has logic to always show on mobile. Steps to ensure it doesn't overlap content: 
                 The video container has padding-bottom? In mobile overlay I added pb-20.
             */}
             {isMobile && <Navbar />}
-        </div>
+        </div >
     );
 };
 

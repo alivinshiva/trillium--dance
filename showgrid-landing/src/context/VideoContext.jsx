@@ -159,7 +159,7 @@ export const VideoProvider = ({ children }) => {
             await fetch(`${API_URL}/interactions/share`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ videoId, userId: user.id, targetType })
+                body: JSON.stringify({ videoId, userId: user ? user.id : 'guest', targetType })
             });
         } catch (err) {
             console.error("Error sharing video:", err);
@@ -216,6 +216,10 @@ export const VideoProvider = ({ children }) => {
         }
     };
 
+    const getPublicVideoUrl = (videoId) => {
+        return `${window.location.origin}/discovered/feed/${videoId}`;
+    };
+
     return (
         <VideoContext.Provider value={{
             videos,
@@ -233,7 +237,8 @@ export const VideoProvider = ({ children }) => {
             rateVideo,
             shareVideo,
             getVideoStats,
-            getLeaderboard
+            getLeaderboard,
+            getPublicVideoUrl
         }}>
             {children}
         </VideoContext.Provider>

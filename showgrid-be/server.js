@@ -19,6 +19,7 @@ mongoose.connect(process.env.MONGO_URI)
 const challengeRoutes = require('./routes/challenges');
 const submissionRoutes = require('./routes/submissions');
 const interactionRoutes = require('./routes/interactions');
+const notificationRoutes = require('./routes/notifications');
 
 app.use('/api/challenges', (req, res, next) => {
     console.log('API Request: /api/challenges');
@@ -34,6 +35,11 @@ app.use('/api/interactions', (req, res, next) => {
     console.log('API Request: /api/interactions');
     next();
 }, interactionRoutes);
+
+app.use('/api/notifications', (req, res, next) => {
+    console.log('API Request: /api/notifications');
+    next();
+}, notificationRoutes);
 
 app.get('/', (req, res) => {
     res.send('ShowGrid User Backend Running on Port ' + PORT);

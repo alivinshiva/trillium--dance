@@ -5,7 +5,7 @@ import { useVideo } from '../context/VideoContext';
 
 const VideoInteraction = ({ videoId }) => {
     const { user } = useUser();
-    const { likeVideo, rateVideo, shareVideo, getVideoStats } = useVideo();
+    const { likeVideo, rateVideo, shareVideo, getVideoStats, getPublicVideoUrl } = useVideo();
 
     const [stats, setStats] = useState({
         likes: 0,
@@ -81,7 +81,10 @@ const VideoInteraction = ({ videoId }) => {
         if (!user) return alert("Please sign in to share");
         await shareVideo(videoId);
         setStats(prev => ({ ...prev, shares: prev.shares + 1 }));
-        alert("Shared! (Simulated)");
+
+        const url = getPublicVideoUrl(videoId);
+        navigator.clipboard.writeText(url);
+        alert("Link copied to clipboard!");
     };
 
     if (loading) return <div className="h-10 animate-pulse bg-white/5 rounded-xl"></div>;

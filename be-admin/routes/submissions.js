@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Submission = require('../models/Submission');
+const Notification = require('../models/Notification');
 
 // GET submissions (can filter by status, userId, challengeId)
 // Example: /api/submissions?status=pending
@@ -75,6 +76,28 @@ router.patch('/:id/status', async (req, res) => {
 
         if (!submission) {
             return res.status(404).json({ message: 'Submission not found' });
+        }
+
+        // CREATE NOTIFICATION if status is 'approved'
+        if (status === 'approved') {
+            try {
+                const notification = new Notification({
+                    userId: submission.userId,
+                    type: 'video_approved',
+                    title: 'Your Performance is Live! 🚀',
+                    message: `Congratulations! Your submission for the challenge has been approved and is now live on the grid.`,
+                    link: `/submission-live/${submission._id}`,
+                    metadata: {
+                        submissionId: submission._id,
+                        challengeId: submission.challengeId
+                    }
+                });
+                await notification.save();
+                console.log(`Notification created for user ${submission.userId}`);
+            } catch (notifErr) {
+                console.error('Error creating notification:', notifErr);
+                // Don't fail the request, just log it
+            }
         }
 
         res.json(submission);

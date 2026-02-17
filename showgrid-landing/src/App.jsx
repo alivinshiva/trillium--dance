@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
@@ -12,6 +12,9 @@ import UploadStep1 from './components/upload/UploadStep1';
 import UploadStep2 from './components/upload/UploadStep2';
 import UploadStep3 from './components/upload/UploadStep3';
 import UploadFinal from './components/upload/UploadFinal';
+import { NotificationProvider } from './context/NotificationContext';
+import NotificationPanel from './components/NotificationPanel';
+import LiveSubmission from './components/LiveSubmission';
 import Discovered from './components/Discovered';
 import Challenges from './components/Challenges';
 import Leaderboard from './components/Leaderboard';
@@ -34,108 +37,125 @@ const LandingPage = () => {
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/sign-in/*" element={<SignInPage />} />
-      <Route path="/sign-up/*" element={<SignUpPage />} />
-      {/* Upload Flow */}
-      <Route path="/challenges/:challengeId/upload" element={<UploadStep1 />} />
-      <Route
-        path="/challenges/:challengeId/upload/step-2"
-        element={
-          <>
-            <SignedIn>
-              <UploadStep2 />
-            </SignedIn>
-            <SignedOut>
-              <RedirectToSignIn />
-            </SignedOut>
-          </>
-        }
-      />
-      <Route
-        path="/challenges/:challengeId/upload/step-3"
-        element={
-          <>
-            <SignedIn>
-              <UploadStep3 />
-            </SignedIn>
-            <SignedOut>
-              <RedirectToSignIn />
-            </SignedOut>
-          </>
-        }
-      />
-      <Route
-        path="/challenges/:challengeId/upload/step-4"
-        element={
-          <>
-            <SignedIn>
-              <UploadFinal />
-            </SignedIn>
-            <SignedOut>
-              <RedirectToSignIn />
-            </SignedOut>
-          </>
-        }
-      />
-      <Route path="/challenges" element={<Challenges />} />
-      <Route path="/leaderboard" element={<Leaderboard />} />
-      <Route path="/leaderboard/:challengeId" element={<Leaderboard />} />
-      {/* Discovered Page - Protected */}
-      <Route
-        path="/discovered"
-        element={
-          <>
-            <SignedIn>
-              <Discovered />
-            </SignedIn>
-            <SignedOut>
-              <RedirectToSignIn />
-            </SignedOut>
-          </>
-        }
-      />
-      <Route
-        path="/discovered/feed/:initialVideoId"
-        element={
-          <>
-            <SignedIn>
-              <Discovered />
-            </SignedIn>
-            <SignedOut>
-              <RedirectToSignIn />
-            </SignedOut>
-          </>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <>
-            <SignedIn>
-              <Profile />
-            </SignedIn>
-            <SignedOut>
-              <RedirectToSignIn />
-            </SignedOut>
-          </>
-        }
-      />
-      <Route
-        path="/dashboard"
-        element={
-          <>
-            <SignedIn>
-              <Dashboard />
-            </SignedIn>
-            <SignedOut>
-              <RedirectToSignIn />
-            </SignedOut>
-          </>
-        }
-      />
-    </Routes>
+    <NotificationProvider>
+      <NotificationPanel />
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/sign-in/*" element={<SignInPage />} />
+        <Route path="/sign-up/*" element={<SignUpPage />} />
+
+        {/* Upload Flow */}
+        <Route path="/upload" element={<UploadStep1 />} />
+        <Route path="/challenges/:challengeId/upload" element={<UploadStep1 />} />
+
+        <Route
+          path="/challenges/:challengeId/upload/step-2"
+          element={
+            <>
+              <SignedIn>
+                <UploadStep2 />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          }
+        />
+        <Route
+          path="/challenges/:challengeId/upload/step-3"
+          element={
+            <>
+              <SignedIn>
+                <UploadStep3 />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          }
+        />
+        <Route
+          path="/challenges/:challengeId/upload/step-4"
+          element={
+            <>
+              <SignedIn>
+                <UploadFinal />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          }
+        />
+
+        {/* Main App Routes */}
+        <Route path="/challenges" element={<Challenges />} />
+
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/leaderboard/:challengeId" element={<Leaderboard />} />
+
+        {/* Protected Routes */}
+        <Route
+          path="/discovered"
+          element={
+            <>
+              <SignedIn>
+                <Discovered />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          }
+        />
+        <Route
+          path="/discovered/feed/:initialVideoId"
+          element={<Discovered />}
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <>
+              <SignedIn>
+                <Profile />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          }
+        />
+
+        <Route
+          path="/submission-live/:submissionId"
+          element={
+            <>
+              <SignedIn>
+                <LiveSubmission />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          }
+        />
+
+        <Route
+          path="/dashboard"
+          element={
+            <>
+              <SignedIn>
+                <Dashboard />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          }
+        />
+      </Routes>
+    </NotificationProvider>
   );
 }
 
