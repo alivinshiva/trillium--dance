@@ -90,6 +90,30 @@ export const VideoProvider = ({ children }) => {
         }
     };
 
+    // Update Challenge - PUT to Backend
+    const updateChallenge = async (id, challengeData) => {
+        try {
+            // Note: challengeData should be FormData if sending files
+            const res = await fetch(`${API_URL}/challenges/${id}`, {
+                method: 'PUT',
+                body: challengeData
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Failed to update challenge');
+            }
+
+            const updatedChallenge = await res.json();
+            setChallenges(prev => prev.map(c => c._id === id ? updatedChallenge : c));
+            return updatedChallenge;
+        } catch (err) {
+            console.error("Error updating challenge:", err);
+            alert(`Error: ${err.message}`);
+            throw err;
+        }
+    };
+
     // Get Presets from Backend
     const getPresets = async () => {
         console.log("Fetching presets from:", `${API_URL}/challenges/presets`);
@@ -157,6 +181,7 @@ export const VideoProvider = ({ children }) => {
             getPendingVideos,
             challenges,
             addChallenge,
+            updateChallenge,
             deleteChallenge,
             selectedChallenge,
             setSelectedChallenge,

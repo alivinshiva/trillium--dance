@@ -33,12 +33,12 @@ const UploadFinal = () => {
         "Mumbai", "Delhi", "Bangalore", "Kolkata", "Chennai", "Hyderabad", "Pune", "Ahmedabad", "Jaipur", "Surat"
     ];
 
-    const AVAILABLE_TAGS = [
-        "#DanceVideo", "#DanceLife", "#Choreography", "#DanceReels", "#InstaDance",
-        "#StreetDance", "#StudioDance", "#FreestyleDance", "#HipHopDance", "#UrbanDance",
-        "#DanceVibes", "#FeelTheBeat", "#GrooveTime", "#DanceFlow", "#JustDance",
-        "#ContemporaryDance", "#DancePerformance", "#BeatDrop", "#MoveWithMusic", "#DancerVibes"
-    ];
+    const AVAILABLE_TAGS = selectedChallenge?.tags && selectedChallenge.tags.length > 0
+        ? selectedChallenge.tags
+        : [
+            "DanceVideo", "DanceLife", "Choreography", "DanceReels", "InstaDance",
+            "StreetDance", "StudioDance", "FreestyleDance", "HipHopDance", "UrbanDance"
+        ];
 
     const [selectedTags, setSelectedTags] = useState([]);
 
@@ -210,7 +210,7 @@ const UploadFinal = () => {
                                     : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:border-white/20'
                                     }`}
                             >
-                                {tag}
+                                {tag.startsWith('#') ? tag : `#${tag}`}
                             </button>
                         ))}
                     </div>

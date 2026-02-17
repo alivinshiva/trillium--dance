@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useVideo } from './context/VideoContext';
-import { Check, X, Shield, Plus, Calendar, Music, Layers, Search, Trash2, Play, AlertCircle } from 'lucide-react';
+import { Check, X, Shield, Plus, Calendar, Music, Layers, Search, Trash2, Play, AlertCircle, Edit2 } from 'lucide-react';
 
 const App = () => {
   const { getPendingVideos, updateVideoStatus, addChallenge, deleteChallenge, challenges, getPresets, videos } = useVideo();
@@ -56,12 +56,15 @@ const App = () => {
   });
 
   // Challenge Form State
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+
   const [newChallenge, setNewChallenge] = useState({
     title: '',
     songUrl: '',
     startDate: '',
     endDate: '',
-    tags: ['Energy', 'Choreo', 'Sync', 'Vibe'],
+    tags: [],
     description: '',
     image: null,
     presetComments: { positive: [], neutral: [], negative: [] }
@@ -106,6 +109,8 @@ const App = () => {
     }
   };
 
+  const { updateChallenge } = useVideo();
+
   const handleChallengeSubmit = async (e) => {
     e.preventDefault();
 
@@ -119,23 +124,67 @@ const App = () => {
     formData.append('tags', JSON.stringify(newChallenge.tags));
     formData.append('presetComments', JSON.stringify(newChallenge.presetComments));
 
-    if (newChallenge.image) {
+    if (newChallenge.image instanceof File) {
       formData.append('image', newChallenge.image);
     }
 
-    await addChallenge(formData);
+    try {
+      if (isEditing) {
+        await updateChallenge(editingId, formData);
+        alert('Challenge Updated!');
+        setIsEditing(false);
+        setEditingId(null);
+      } else {
+        await addChallenge(formData);
+        alert('Challenge Created!');
+      }
 
+      setNewChallenge({
+        title: '',
+        songUrl: '',
+        startDate: '',
+        endDate: '',
+        tags: [],
+        description: '',
+        image: null,
+        presetComments: { positive: [], neutral: [], negative: [] }
+      });
+    } catch (error) {
+      console.error(error);
+      alert('Failed to save challenge');
+    }
+  };
+
+  const handleEditClick = (challenge) => {
+    setIsEditing(true);
+    setEditingId(challenge._id);
+    setNewChallenge({
+      title: challenge.title,
+      songUrl: challenge.songUrl,
+      startDate: challenge.startDate ? new Date(challenge.startDate).toISOString().split('T')[0] : '',
+      endDate: challenge.endDate ? new Date(challenge.endDate).toISOString().split('T')[0] : '',
+      tags: challenge.tags || [],
+      description: challenge.description,
+      image: challenge.image, // Keep existing URL reference
+      presetComments: challenge.presetComments || { positive: [], neutral: [], negative: [] }
+    });
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditingId(null);
     setNewChallenge({
       title: '',
       songUrl: '',
       startDate: '',
       endDate: '',
-      tags: ['', '', '', ''],
+      tags: [],
       description: '',
       image: null,
       presetComments: { positive: [], neutral: [], negative: [] }
     });
-    alert('Challenge Created!');
   };
 
 
@@ -317,9 +366,16 @@ const App = () => {
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8">
             {/* Create Form */}
             <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
-              <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-                <Plus size={20} className="text-primary" /> Create New Challenge
-              </h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <Plus size={20} className="text-primary" /> {isEditing ? 'Edit Challenge' : 'Create New Challenge'}
+                </h2>
+                {isEditing && (
+                  <button onClick={handleCancelEdit} className="text-xs text-white/50 hover:text-white bg-white/10 px-3 py-1 rounded">
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
               <form onSubmit={handleChallengeSubmit} className="space-y-6">
                 <div>
                   <label className="block text-xs font-bold uppercase text-white/50 mb-2">Challenge Title</label>
@@ -379,6 +435,44 @@ const App = () => {
                       />
                     </div>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase text-white/50 mb-2">Challenge Tags (Select Max 10)</label>
+                  <div className="flex flex-wrap gap-2 mb-3 max-h-40 overflow-y-auto custom-scrollbar p-1">
+                    {[
+                      "DanceVideo", "DanceLife", "Choreography", "DanceReels", "InstaDance",
+                      "StreetDance", "StudioDance", "FreestyleDance", "HipHopDance", "UrbanDance",
+                      "DanceVibes", "FeelTheBeat", "GrooveTime", "DanceFlow", "JustDance",
+                      "ContemporaryDance", "DancePerformance", "BeatDrop", "MoveWithMusic", "DancerVibes",
+                      "Popping", "Locking", "Krump", "Waacking", "Vogue",
+                      "Salsa", "Bachata", "Tango", "Bollywood", "Classical",
+                      "Jazz", "Ballet", "TapDance", "Lyrical", "ModernDance"
+                    ].map((tag, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => {
+                          if (newChallenge.tags.includes(tag)) {
+                            setNewChallenge({ ...newChallenge, tags: newChallenge.tags.filter(t => t !== tag) });
+                          } else {
+                            if (newChallenge.tags.length < 10) {
+                              setNewChallenge({ ...newChallenge, tags: [...newChallenge.tags, tag] });
+                            } else {
+                              alert("Max 10 tags allowed");
+                            }
+                          }
+                        }}
+                        className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 border transition-all ${newChallenge.tags.includes(tag)
+                          ? 'bg-primary border-primary text-white shadow-[0_0_10px_rgba(236,72,153,0.4)]'
+                          : 'bg-black/20 border-white/10 text-white/50 hover:bg-white/10'
+                          }`}
+                      >
+                        #{tag}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-white/30 mt-1">Selected: {newChallenge.tags.length}/10. These tags will be available for users.</p>
                 </div>
 
                 <div>
@@ -462,7 +556,7 @@ const App = () => {
                 </div>
 
                 <button type="submit" className="btn btn-primary w-full py-4 text-sm font-bold tracking-widest uppercase">
-                  Launch Challenge
+                  {isEditing ? 'Update Challenge' : 'Launch Challenge'}
                 </button>
               </form>
             </div>
@@ -474,7 +568,7 @@ const App = () => {
               </h2>
               <div className="space-y-4">
                 {challenges.map(challenge => (
-                  <div key={challenge.id} className="bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/10 transition-colors">
+                  <div key={challenge._id} className="bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/10 transition-colors">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-bold">{challenge.title}</h3>
                       <span className="text-[10px] bg-green-500/20 text-green-500 px-2 py-1 rounded font-bold">ACTIVE</span>
@@ -490,17 +584,26 @@ const App = () => {
                         <Calendar size={12} />
                         <span>{new Date(challenge.startDate).toLocaleDateString()} - {new Date(challenge.endDate).toLocaleDateString()}</span>
                       </div>
-                      <button
-                        onClick={() => {
-                          if (confirm('Are you sure you want to delete this challenge? This action cannot be undone.')) {
-                            deleteChallenge(challenge._id);
-                          }
-                        }}
-                        className="text-red-500 hover:text-red-400 p-2 hover:bg-red-500/10 rounded-full transition-colors"
-                        title="Delete Challenge"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditClick(challenge)}
+                          className="text-primary hover:text-white p-2 hover:bg-white/10 rounded-full transition-colors"
+                          title="Edit Challenge"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm('Are you sure you want to delete this challenge? This action cannot be undone.')) {
+                              deleteChallenge(challenge._id);
+                            }
+                          }}
+                          className="text-red-500 hover:text-red-400 p-2 hover:bg-red-500/10 rounded-full transition-colors"
+                          title="Delete Challenge"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

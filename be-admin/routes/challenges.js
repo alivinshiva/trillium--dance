@@ -95,4 +95,25 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+// PUT update challenge
+router.put('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = { ...req.body };
+
+        // Parse JSON fields if they come as strings (from FormData)
+        if (typeof updates.tags === 'string') {
+            try { updates.tags = JSON.parse(updates.tags); } catch (e) { }
+        }
+        if (typeof updates.presetComments === 'string') {
+            try { updates.presetComments = JSON.parse(updates.presetComments); } catch (e) { }
+        }
+
+        const challenge = await Challenge.findByIdAndUpdate(id, updates, { new: true });
+        res.json(challenge);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 module.exports = router;
