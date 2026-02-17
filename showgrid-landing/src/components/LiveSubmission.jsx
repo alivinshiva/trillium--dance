@@ -7,7 +7,7 @@ import Navbar from './Navbar';
 
 const LiveSubmission = () => {
     const { submissionId } = useParams();
-    const { getApprovedVideos, getVideoStats, getPublicVideoUrl } = useVideo();
+    const { getApprovedVideos, getVideoStats, getPublicVideoUrl, nativeShare } = useVideo();
     const [submission, setSubmission] = useState(null);
     const [stats, setStats] = useState({ likes: 0, votes: 0 }); // votes = likes for now? or distinct
     const videoRef = useRef(null);
@@ -70,19 +70,38 @@ const LiveSubmission = () => {
         }
     };
 
-    const handleShare = (platform) => {
+    const handleShare = async (platform) => {
         if (!submission) return;
+
+        if (platform === 'native') {
+            await nativeShare({
+                videoId: submission._id,
+                title: `Check out my performance on ShowGrid!`,
+                text: `I'm competing in the ${submission.challengeId?.title}. Watch and vote for me!`
+            });
+            return;
+        }
+
+        // Keep specific buttons if user wants them, but wire "Copy Link" or Main Share to native
         const url = getPublicVideoUrl(submission._id);
         const text = `Check out my performance on ShowGrid! ${url}`;
 
         if (platform === 'whatsapp') {
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
         } else if (platform === 'instagram') {
-            navigator.clipboard.writeText(url);
-            alert("Link copied! Share it on your story.");
-        } else {
-            navigator.clipboard.writeText(url);
-            alert("Link copied to clipboard!");
+            await nativeShare({
+                videoId: submission._id,
+                title: `Check out my performance on ShowGrid!`,
+                text: `I'm competing in the ${submission.challengeId?.title}. Watch and vote for me!`
+            });
+            // Fallback or specific instagram logic if native share doesn't support direct targetting well
+            // For now, native share is best for "Instagram" button on mobile too if it opens the sheet
+        } else if (platform === 'copy') {
+            await nativeShare({
+                videoId: submission._id,
+                title: `Check out my performance on ShowGrid!`,
+                text: `I'm competing in the ${submission.challengeId?.title}. Watch and vote for me!`
+            });
         }
     };
 
@@ -170,10 +189,10 @@ const LiveSubmission = () => {
                         {submission ? getPublicVideoUrl(submission._id).replace(/^https?:\/\//, '') : 'Loading Link...'}
                     </span>
                     <button
-                        onClick={() => handleShare('copy')}
-                        className="btn btn-primary rounded-full px-4 md:px-6 font-bold text-sm h-10 md:h-12 whitespace-nowrap"
+                        onClick={() => handleShare('native')}
+                        className="btn btn-primary rounded-full px-4 md:px-6 font-bold text-sm h-10 md:h-12 whitespace-nowrap flex items-center gap-2"
                     >
-                        Copy Link
+                        <Share2 size={16} /> Share
                     </button>
                 </div>
 

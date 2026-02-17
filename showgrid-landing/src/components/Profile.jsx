@@ -10,16 +10,19 @@ import { useNotification } from '../context/NotificationContext';
 
 const Profile = () => {
     const { user, isLoaded } = useUser();
-    const { getUserVideos, deleteVideo, getPublicVideoUrl } = useVideo();
+    const { getUserVideos, deleteVideo, getPublicVideoUrl, nativeShare } = useVideo();
     const { unreadCount, togglePanel } = useNotification();
     const userVideos = getUserVideos();
 
-    const handleShare = (e, videoId) => {
+    const handleShare = async (e, videoId) => {
         e.preventDefault(); // Prevent grid item click
         e.stopPropagation();
-        const url = getPublicVideoUrl(videoId);
-        navigator.clipboard.writeText(url);
-        alert("Link copied to clipboard!");
+
+        await nativeShare({
+            videoId,
+            title: 'My Video on ShowGrid',
+            text: 'Check out my performance on ShowGrid!'
+        });
     };
 
     if (!isLoaded) {

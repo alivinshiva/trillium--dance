@@ -8,7 +8,7 @@ import Navbar from './Navbar';
 
 
 const Discovered = () => {
-    const { getApprovedVideos, getPresets, addComment, likeVideo, rateVideo, shareVideo, getVideoStats, getPublicVideoUrl } = useVideo();
+    const { getApprovedVideos, getPresets, addComment, likeVideo, rateVideo, shareVideo, getVideoStats, getPublicVideoUrl, nativeShare } = useVideo();
     const { initialVideoId } = useParams();
     const { user } = useUser();
     const { openSignIn } = useClerk();
@@ -150,11 +150,13 @@ const Discovered = () => {
         } catch (err) { console.error("Failed to post comment", err); }
     };
 
-    const handleShare = (videoId) => {
-        shareVideo(videoId);
-        const url = getPublicVideoUrl(videoId);
-        navigator.clipboard.writeText(url);
-        alert("Link copied to clipboard!");
+    const handleShare = async (videoId) => {
+        if (!currentVideo) return;
+        await nativeShare({
+            videoId,
+            title: `Watch ${currentVideo.userName}'s performance on ShowGrid!`,
+            text: `Check out this amazing video by @${currentVideo.userName}`
+        });
     };
 
     // Mobile Check

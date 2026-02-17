@@ -220,6 +220,31 @@ export const VideoProvider = ({ children }) => {
         return `${window.location.origin}/discovered/feed/${videoId}`;
     };
 
+    const nativeShare = async ({ videoId, title, text }) => {
+        // Track the share
+        shareVideo(videoId);
+
+        const url = getPublicVideoUrl(videoId);
+        const shareData = {
+            title: title || 'Check out this video on ShowGrid!',
+            text: text || 'Watch this amazing performance!',
+            url: url
+        };
+
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                // Fallback
+                await navigator.clipboard.writeText(url);
+                alert("Link copied to clipboard! (Share menu not supported)");
+            }
+        } catch (err) {
+            console.error("Error sharing:", err);
+            // If user cancels share, it throws error, ignore or handle lightly
+        }
+    };
+
     return (
         <VideoContext.Provider value={{
             videos,
@@ -238,7 +263,8 @@ export const VideoProvider = ({ children }) => {
             shareVideo,
             getVideoStats,
             getLeaderboard,
-            getPublicVideoUrl
+            getPublicVideoUrl,
+            nativeShare
         }}>
             {children}
         </VideoContext.Provider>
