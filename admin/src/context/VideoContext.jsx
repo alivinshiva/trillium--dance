@@ -111,13 +111,12 @@ export const VideoProvider = ({ children }) => {
     };
 
     // Update Video Status - PATCH to Backend
-    const updateVideoStatus = async (id, status, comment = null) => {
+    const updateVideoStatus = async (id, status, message = null) => {
         try {
-            const body = { status };
-            if (comment) body.comment = comment;
+            const body = { status, message };
 
             const res = await fetch(`${API_URL}/submissions/${id}/status`, {
-                method: 'PATCH',
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },

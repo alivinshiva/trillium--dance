@@ -31,79 +31,46 @@ router.post('/', async (req, res) => {
     }
 });
 
-// PATCH update status (approve/reject)
-router.patch('/:id/status', async (req, res) => {
+// PUT update submission status (Approve/Reject)
+router.put('/:id/status', async (req, res) => {
     try {
-        const { status, comment } = req.body;
-        if (!['pending', 'approved', 'rejected'].includes(status)) {
-            return res.status(400).json({ message: 'Invalid status' });
-        }
-
-        const updateData = { status };
-
-        // If a comment is provided, push it to the comments array
-        if (comment) {
-            const newComment = {
-                userId: 'admin', // Hardcoded for now
-                userName: 'ShowGrid Judge',
-                userAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Judge',
-                text: comment,
-                type: 'custom',
-                createdAt: new Date()
-            };
-            // Use $push to append to the array
-            // We use findByIdAndUpdate with $set for status and $push for comments
-            const submission = await Submission.findByIdAndUpdate(
-                req.params.id,
-                {
-                    $set: { status },
-                    $push: { comments: newComment }
-                },
-                { new: true }
-            );
-            if (!submission) {
-                return res.status(404).json({ message: 'Submission not found' });
-            }
-            return res.json(submission);
-        }
-
-        // If no comment, just update status
-        const submission = await Submission.findByIdAndUpdate(
-            req.params.id,
-            { status },
-            { new: true }
-        );
+        const { status, message } = req.body; // status: 'approved' | 'rejected'
+        const submission = await Submission.findById(req.params.id);
 
         if (!submission) {
             return res.status(404).json({ message: 'Submission not found' });
         }
 
-        // CREATE NOTIFICATION if status is 'approved'
-        if (status === 'approved') {
-            try {
-                const notification = new Notification({
-                    userId: submission.userId,
-                    type: 'video_approved',
-                    title: 'Your Performance is Live! 🚀',
-                    message: `Congratulations! Your submission for the challenge has been approved and is now live on the grid.`,
-                    link: `/submission-live/${submission._id}`,
-                    metadata: {
-                        submissionId: submission._id,
-                        challengeId: submission.challengeId
-                    }
-                });
-                await notification.save();
-                console.log(`Notification created for user ${submission.userId}`);
-            } catch (notifErr) {
-                console.error('Error creating notification:', notifErr);
-                // Don't fail the request, just log it
-            }
+        // Update status
+        submission.status = status;
+        await submission.save();
+
+        // Create Notification
+        const notificationType = status === 'approved' ? 'video_approved' : 'video_rejected';
+        const title = status === 'approved' ? 'Performance Approved!' : 'Submission Returned';
+        const notifMessage = message || (status === 'approved'
+            ? `Your submission for ${submission.challengeId?.title || 'the challenge'} is live!`
+            : `Your submission needs some changes.`);
+
+        try {
+            await Notification.create({
+                userId: submission.userId,
+                type: notificationType,
+                title,
+                message: notifMessage,
+                metadata: {
+                    submissionId: submission._id,
+                    challengeId: submission.challengeId
+                }
+            });
+        } catch (error) {
+            console.error("Error creating notification", error);
         }
 
         res.json(submission);
     } catch (err) {
-        console.error('Error in PATCH /status:', err);
-        res.status(500).json({ message: err.message, stack: err.stack });
+        console.error("Error updating status:", err);
+        res.status(500).json({ message: err.message });
     }
 });
 

@@ -47,7 +47,7 @@ const Challenges = () => {
                             {challenges.map((challenge) => {
                                 const hasJoined = userVideos.some(v => {
                                     const cId = v.challengeId && v.challengeId._id ? v.challengeId._id : v.challengeId;
-                                    return cId === challenge._id;
+                                    return cId === challenge._id && v.status !== 'rejected';
                                 });
                                 return (
                                     <div key={challenge._id} className={`group bg-white/5 border border-white/10 rounded-3xl overflow-hidden transition-all duration-300 flex flex-col relative ${hasJoined ? 'opacity-50 grayscale' : 'hover:border-primary/50 hover:-translate-y-2'}`}>

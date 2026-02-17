@@ -47,8 +47,8 @@ export const VideoProvider = ({ children }) => {
         fetchVideos();
 
         // Polling removed to prevent excessive API calls
-        // const interval = setInterval(fetchVideos, 10000);
-        // return () => clearInterval(interval);
+        const interval = setInterval(fetchVideos, 10000);
+        return () => clearInterval(interval);
     }, []);
 
 
@@ -245,6 +245,31 @@ export const VideoProvider = ({ children }) => {
         }
     };
 
+    const updateSubmissionStatus = async (submissionId, status, message) => {
+        try {
+            const res = await fetch(`${API_URL}/submissions/${submissionId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status, message })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Failed to update status');
+            }
+
+            const updatedSubmission = await res.json();
+
+            // Update local state
+            setVideos(prev => prev.map(v => v._id === submissionId ? updatedSubmission : v));
+
+            return updatedSubmission;
+        } catch (err) {
+            console.error("Error updating submission status:", err);
+            throw err;
+        }
+    };
+
     return (
         <VideoContext.Provider value={{
             videos,
@@ -264,7 +289,8 @@ export const VideoProvider = ({ children }) => {
             getVideoStats,
             getLeaderboard,
             getPublicVideoUrl,
-            nativeShare
+            nativeShare,
+            updateSubmissionStatus
         }}>
             {children}
         </VideoContext.Provider>

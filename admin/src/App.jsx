@@ -1,11 +1,59 @@
 import React, { useState } from 'react';
 import { useVideo } from './context/VideoContext';
-import { Check, X, Shield, Plus, Calendar, Music, Layers, Search, Trash2 } from 'lucide-react';
+import { Check, X, Shield, Plus, Calendar, Music, Layers, Search, Trash2, Play, AlertCircle } from 'lucide-react';
 
 const App = () => {
-  const { getPendingVideos, updateVideoStatus, addChallenge, deleteChallenge, challenges, getPresets } = useVideo();
+  const { getPendingVideos, updateVideoStatus, addChallenge, deleteChallenge, challenges, getPresets, videos } = useVideo();
   const pendingVideos = getPendingVideos();
-  const [activeTab, setActiveTab] = useState('reviews'); // 'reviews' or 'challenges'
+  const [activeTab, setActiveTab] = useState('reviews'); // 'reviews' | 'challenges' | 'submissions'
+
+  // Submissions State
+  const [selectedVideo, setSelectedVideo] = useState(null);
+  const [actionVideo, setActionVideo] = useState(null);
+  const [actionType, setActionType] = useState(null); // 'approve' | 'rejected'
+  const [adminMessage, setAdminMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const openActionModal = (video, type) => {
+    setActionVideo(video);
+    setActionType(type);
+    setAdminMessage('');
+  };
+
+  const closeActionModal = () => {
+    setActionVideo(null);
+    setActionType(null);
+    setAdminMessage('');
+  };
+
+  const handleActionSubmit = async () => {
+    if (!actionVideo || !actionType) return;
+
+    // Revoke/Reject requires message
+    if (actionType === 'rejected' && !adminMessage.trim()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // 'approve' -> 'approved', 'revoke' -> 'rejected'
+      // The button passes 'approve' or 'revoke', actually let's standardise
+      // UI passes 'approved' or 'rejected'
+      await updateVideoStatus(actionVideo._id, actionType, adminMessage);
+      closeActionModal();
+    } catch (error) {
+      alert('Failed to update status: ' + error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Sort videos for "All Submissions" tab
+  const sortedVideos = [...videos].sort((a, b) => {
+    if (a.status === 'pending' && b.status !== 'pending') return -1;
+    if (a.status !== 'pending' && b.status === 'pending') return 1;
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
 
   // Challenge Form State
   const [newChallenge, setNewChallenge] = useState({
@@ -119,9 +167,99 @@ const App = () => {
           >
             Challenge Manager
           </button>
+          <button
+            onClick={() => setActiveTab('submissions')}
+            className={`pb-4 px-2 font-bold text-sm transition-colors ${activeTab === 'submissions' ? 'text-primary border-b-2 border-primary' : 'text-white/40 hover:text-white'}`}
+          >
+            All Submissions
+          </button>
         </div>
 
-        {activeTab === 'reviews' ? (
+        {activeTab === 'submissions' ? (
+          <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden overflow-x-auto">
+            <table className="w-full min-w-[800px] text-left text-sm">
+              <thead className="bg-white/5 text-white/60 font-bold uppercase tracking-wider border-b border-white/10">
+                <tr>
+                  <th className="p-4">Submission Date</th>
+                  <th className="p-4">User</th>
+                  <th className="p-4">Location</th>
+                  <th className="p-4">Challenge</th>
+                  <th className="p-4 text-center">Video</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {sortedVideos.map(video => (
+                  <tr key={video._id} className="hover:bg-white/5 transition-colors">
+                    <td className="p-4 text-white/60">
+                      {new Date(video.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        {video.userAvatar && (
+                          <img src={video.userAvatar} alt="" className="w-8 h-8 rounded-full bg-white/10" />
+                        )}
+                        <div>
+                          <div className="font-bold">{video.userName}</div>
+                          <div className="text-xs text-white/40">ID: {video.userId ? video.userId.slice(-4) : 'N/A'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 text-white/80">{video.city || '-'}</td>
+                    <td className="p-4 text-primary font-medium">
+                      {video.challengeId?.title || 'Unknown Challenge'}
+                    </td>
+                    <td className="p-4 text-center">
+                      <button
+                        onClick={() => setSelectedVideo(video)}
+                        className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-primary hover:text-white transition-all mx-auto"
+                      >
+                        <Play size={16} fill="currentColor" />
+                      </button>
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${video.status === 'approved' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                        video.status === 'rejected' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                          'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                        }`}>
+                        {video.status}
+                      </span>
+                    </td>
+                    <td className="p-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {video.status !== 'approved' && (
+                          <button
+                            onClick={() => openActionModal(video, 'approved')}
+                            className="p-2 bg-green-500/10 text-green-500 rounded hover:bg-green-500 hover:text-white transition-colors"
+                            title="Approve"
+                          >
+                            <Check size={18} />
+                          </button>
+                        )}
+                        {video.status !== 'rejected' && (
+                          <button
+                            onClick={() => openActionModal(video, 'rejected')}
+                            className="p-2 bg-red-500/10 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors"
+                            title="Revoke/Reject"
+                          >
+                            <X size={18} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {sortedVideos.length === 0 && (
+              <div className="p-12 text-center text-white/40">
+                No submissions found.
+              </div>
+            )}
+          </div>
+        ) : activeTab === 'reviews' ? (
           pendingVideos.length === 0 ? (
             <div className="bg-white/5 border border-white/10 rounded-2xl p-12 text-center">
               <div className="w-16 h-16 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -158,13 +296,13 @@ const App = () => {
 
                     <div className="grid grid-cols-2 gap-3 mt-auto">
                       <button
-                        onClick={() => updateVideoStatus(video._id, 'rejected')}
+                        onClick={() => openActionModal(video, 'rejected')}
                         className="flex items-center justify-center gap-2 py-2 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-colors font-semibold text-sm"
                       >
                         <X size={16} /> Revoke
                       </button>
                       <button
-                        onClick={() => updateVideoStatus(video._id, 'approved')}
+                        onClick={() => openActionModal(video, 'approved')}
                         className="flex items-center justify-center gap-2 py-2 rounded-lg bg-green-500/20 text-green-500 hover:bg-green-500/30 transition-colors font-semibold text-sm"
                       >
                         <Check size={16} /> Approve
@@ -366,6 +504,91 @@ const App = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Video Player Modal */}
+        {selectedVideo && (
+          <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur flex items-center justify-center p-4">
+            <div className="relative w-full max-w-sm aspect-[9/16] bg-black rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+              <button
+                onClick={() => setSelectedVideo(null)}
+                className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 backdrop-blur rounded-full flex items-center justify-center text-white hover:bg-white/20"
+              >
+                <X size={18} />
+              </button>
+              <video
+                src={selectedVideo.videoUrl}
+                className="w-full h-full object-cover"
+                controls
+                autoPlay
+              />
+              <div className="absolute bottom-4 left-4 right-4 pointer-events-none">
+                <h3 className="font-bold text-shadow text-white">@{selectedVideo.userName}</h3>
+                <p className="text-sm opacity-80 line-clamp-2 text-white">{selectedVideo.description}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Action Modal (Approve/Revoke) */}
+        {actionVideo && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-[#1a1a1a] border border-white/10 w-full max-w-md rounded-2xl p-6 shadow-2xl">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="text-xl font-bold flex items-center gap-2 text-white">
+                    {actionType === 'approved' ? (
+                      <><Check className="text-green-500" /> Approve Submission</>
+                    ) : (
+                      <><AlertCircle className="text-red-500" /> Revoke Submission</>
+                    )}
+                  </h3>
+                  <p className="text-white/40 text-sm mt-1">
+                    {actionType === 'approved'
+                      ? `Make @${actionVideo.userName}'s video public.`
+                      : `Return @${actionVideo.userName}'s video to drafts.`}
+                  </p>
+                </div>
+                <button onClick={closeActionModal} className="text-white/40 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-xs font-bold uppercase tracking-wider text-white/60 mb-2">
+                  {actionType === 'approved' ? 'Message (Optional)' : 'Reason for Revocation (Required)'}
+                </label>
+                <textarea
+                  value={adminMessage}
+                  onChange={(e) => setAdminMessage(e.target.value)}
+                  placeholder={actionType === 'approved' ? "Ex: Great energy! Welcome to ShowGrid." : "Ex: Video is too dark / Audio is unclear."}
+                  className={`w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-primary min-h-[100px] resize-none ${actionType === 'rejected' && !adminMessage.trim() ? 'border-red-500/50' : ''
+                    }`}
+                />
+                {actionType === 'rejected' && !adminMessage.trim() && (
+                  <p className="text-red-500 text-xs mt-2">* A reason is required for revocation.</p>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={closeActionModal}
+                  className="flex-1 py-3 rounded-lg font-bold text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleActionSubmit}
+                  disabled={isSubmitting || (actionType === 'rejected' && !adminMessage.trim())}
+                  className={`flex-1 py-3 rounded-lg font-bold text-white transition-all shadow-lg ${actionType === 'approved'
+                    ? 'bg-green-600 hover:bg-green-500 shadow-green-900/20'
+                    : 'bg-red-600 hover:bg-red-500 shadow-red-900/20'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {isSubmitting ? 'Processing...' : (actionType === 'approved' ? 'Approve' : 'Revoke')}
+                </button>
               </div>
             </div>
           </div>

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const Submission = require('../models/Submission');
+const Notification = require('../models/Notification');
 const { VideoRatingAggregate } = require('../models/Interaction');
 const { upload } = require('../config/cloudinary');
 
@@ -165,6 +166,45 @@ router.delete('/:id', async (req, res) => {
         }
         res.json({ message: 'Submission deleted successfully' });
     } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// PUT update submission status (Approve/Reject)
+router.put('/:id/status', async (req, res) => {
+    try {
+        const { status, message } = req.body; // status: 'approved' | 'rejected'
+        const submission = await Submission.findById(req.params.id);
+
+        if (!submission) {
+            return res.status(404).json({ message: 'Submission not found' });
+        }
+
+        // Update status
+        submission.status = status;
+        await submission.save();
+
+        // Create Notification
+        const notificationType = status === 'approved' ? 'video_approved' : 'video_rejected';
+        const title = status === 'approved' ? 'Performance Approved!' : 'Submission Returned';
+        const notifMessage = message || (status === 'approved'
+            ? `Your submission for ${submission.challengeId?.title || 'the challenge'} is live!`
+            : `Your submission needs some changes.`);
+
+        await Notification.create({
+            userId: submission.userId,
+            type: notificationType,
+            title,
+            message: notifMessage,
+            metadata: {
+                submissionId: submission._id,
+                challengeId: submission.challengeId
+            }
+        });
+
+        res.json(submission);
+    } catch (err) {
+        console.error("Error updating status:", err);
         res.status(500).json({ message: err.message });
     }
 });

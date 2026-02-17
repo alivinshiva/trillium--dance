@@ -1,0 +1,2 @@
+PUT /status body: {"status":"rejected","message":"Too blurry"}
+PUT /status body: {"status":"rejected","message":"not up to the mark"}
