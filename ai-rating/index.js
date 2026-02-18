@@ -15,6 +15,27 @@ async function main() {
         process.exit(1);
     }
 
+    // Check for Mock Mode
+    if (process.env.MOCK_AI === 'true') {
+        console.log("⚠️  RUNNING IN MOCK MODE (Bypassing API) ⚠️");
+        // Simulate delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        const mockResult = {
+            synchronization: 8.5,
+            musicality: 7.0,
+            energy_intensity: 9.0,
+            choreography_complexity: 8.5,
+            stage_utilization: 9.0,
+            visual_cleanliness: 8.0,
+            final_grid_index: 8.48,
+            verdict_summary: "High synchronization and energy intensity dominate the performance, while musicality shows moderate alignment. Spatial utilization is excellent but visual cleanliness has minor room for improvement."
+        };
+        console.log("\n--- AI Rating Result (MOCK) ---\n");
+        console.log(mockResult);
+        return;
+    }
+
     try {
         // 1. Read System Prompt
         const systemPromptPath = path.join(__dirname, "system_prompt.txt");
