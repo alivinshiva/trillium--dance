@@ -269,7 +269,7 @@ const Profile = () => {
                                     </div>
                                     <div className="p-4">
                                         <div className="flex justify-between items-start mb-1">
-                                            <h4 className="font-bold text-sm truncate flex-1">{video.userName}</h4>
+                                            <h4 className="font-bold text-sm truncate flex-1 text-primary">{video.challengeId?.title || 'Challenge'}</h4>
                                             <button
                                                 onClick={(e) => handleShare(e, video._id)}
                                                 className="text-white/20 hover:text-white transition-colors p-1"
@@ -292,7 +292,7 @@ const Profile = () => {
                                         </div>
                                         <p className="text-[10px] text-white/50 mb-3 truncate">{video.description}</p>
                                         <div className="flex items-center justify-between text-[10px] text-white/30 font-bold uppercase">
-                                            <span>{new Date(video.timestamp).toLocaleDateString()}</span>
+                                            <span>{new Date(video.createdAt).toLocaleDateString()}</span>
                                             {video.status === 'approved' && (
                                                 <span className="text-green-500 flex items-center gap-1">
                                                     <Check size={10} /> Live on Grid

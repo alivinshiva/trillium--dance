@@ -27,6 +27,17 @@ const challengeSchema = new mongoose.Schema({
         type: [String],
         default: []
     },
+    ratingParameters: {
+        type: [{
+            name: String,
+            weight: Number
+        }],
+        default: [
+            { name: 'Energy', weight: 10 },
+            { name: 'Choreo', weight: 10 },
+            { name: 'Sync', weight: 10 }
+        ]
+    },
     presetComments: {
         positive: [String],
         neutral: [String],

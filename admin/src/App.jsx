@@ -67,6 +67,11 @@ const App = () => {
     tags: [],
     description: '',
     image: null,
+    ratingParameters: [
+      { name: 'Energy', weight: 10 },
+      { name: 'Choreo', weight: 10 },
+      { name: 'Sync', weight: 10 }
+    ],
     presetComments: { positive: [], neutral: [], negative: [] }
   });
 
@@ -111,6 +116,27 @@ const App = () => {
 
   const { updateChallenge } = useVideo();
 
+  /* Rating Parameter Helpers */
+  const addRatingParameter = () => {
+    setNewChallenge(prev => ({
+      ...prev,
+      ratingParameters: [...prev.ratingParameters, { name: '', weight: 10 }]
+    }));
+  };
+
+  const removeRatingParameter = (index) => {
+    setNewChallenge(prev => ({
+      ...prev,
+      ratingParameters: prev.ratingParameters.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateRatingParameter = (index, field, value) => {
+    const updatedParams = [...newChallenge.ratingParameters];
+    updatedParams[index] = { ...updatedParams[index], [field]: value };
+    setNewChallenge(prev => ({ ...prev, ratingParameters: updatedParams }));
+  };
+
   const handleChallengeSubmit = async (e) => {
     e.preventDefault();
 
@@ -122,6 +148,7 @@ const App = () => {
     formData.append('description', newChallenge.description);
     // Send info as JSON strings
     formData.append('tags', JSON.stringify(newChallenge.tags));
+    formData.append('ratingParameters', JSON.stringify(newChallenge.ratingParameters));
     formData.append('presetComments', JSON.stringify(newChallenge.presetComments));
 
     if (newChallenge.image instanceof File) {
@@ -147,6 +174,11 @@ const App = () => {
         tags: [],
         description: '',
         image: null,
+        ratingParameters: [
+          { name: 'Energy', weight: 10 },
+          { name: 'Choreo', weight: 10 },
+          { name: 'Sync', weight: 10 }
+        ],
         presetComments: { positive: [], neutral: [], negative: [] }
       });
     } catch (error) {
@@ -166,6 +198,11 @@ const App = () => {
       tags: challenge.tags || [],
       description: challenge.description,
       image: challenge.image, // Keep existing URL reference
+      ratingParameters: challenge.ratingParameters || [
+        { name: 'Energy', weight: 10 },
+        { name: 'Choreo', weight: 10 },
+        { name: 'Sync', weight: 10 }
+      ],
       presetComments: challenge.presetComments || { positive: [], neutral: [], negative: [] }
     });
     // Scroll to form
@@ -183,6 +220,11 @@ const App = () => {
       tags: [],
       description: '',
       image: null,
+      ratingParameters: [
+        { name: 'Energy', weight: 10 },
+        { name: 'Choreo', weight: 10 },
+        { name: 'Sync', weight: 10 }
+      ],
       presetComments: { positive: [], neutral: [], negative: [] }
     });
   };
@@ -473,6 +515,49 @@ const App = () => {
                     ))}
                   </div>
                   <p className="text-[10px] text-white/30 mt-1">Selected: {newChallenge.tags.length}/10. These tags will be available for users.</p>
+                </div>
+
+                {/* Rating Parameters Section */}
+                <div>
+                  <label className="block text-xs font-bold uppercase text-white/50 mb-2">Rating Parameters</label>
+                  <div className="space-y-3 bg-white/5 p-4 rounded-xl border border-white/5">
+                    {newChallenge.ratingParameters.map((param, index) => (
+                      <div key={index} className="flex gap-3 items-center">
+                        <input
+                          type="text"
+                          placeholder="Parameter Name (e.g. Energy)"
+                          value={param.name}
+                          onChange={(e) => updateRatingParameter(index, 'name', e.target.value)}
+                          className="flex-1 bg-black/20 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
+                        />
+                        <select
+                          value={param.weight}
+                          onChange={(e) => updateRatingParameter(index, 'weight', parseInt(e.target.value))}
+                          className="w-24 bg-black/20 border border-white/10 rounded px-2 py-2 text-sm text-white focus:border-primary focus:outline-none"
+                        >
+                          {[5, 10, 15, 20, 25, 30, 40, 50].map(w => (
+                            <option key={w} value={w}>Weight: {w}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => removeRatingParameter(index)}
+                          className="text-red-500 hover:text-red-400 p-2 hover:bg-white/10 rounded"
+                          disabled={newChallenge.ratingParameters.length <= 1}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={addRatingParameter}
+                      className="text-xs font-bold text-primary hover:text-white flex items-center gap-1 mt-2"
+                    >
+                      <Plus size={14} /> Add Parameter
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-white/30 mt-1">Set the criteria users will rate on. Higher weight means more impact.</p>
                 </div>
 
                 <div>

@@ -63,6 +63,16 @@ router.post('/', upload.single('image'), async (req, res) => {
             }
         }
 
+        let parsedRatings = req.body.ratingParameters;
+        if (typeof req.body.ratingParameters === 'string') {
+            try {
+                parsedRatings = JSON.parse(req.body.ratingParameters);
+            } catch (e) {
+                console.error("Error parsing ratingParameters:", e);
+                parsedRatings = undefined; // Use default from schema
+            }
+        }
+
         const challenge = new Challenge({
             title,
             description,
@@ -71,7 +81,8 @@ router.post('/', upload.single('image'), async (req, res) => {
             songUrl,
             coverUrl,
             tags: parsedTags,
-            presetComments: parsedPresets
+            presetComments: parsedPresets,
+            ratingParameters: parsedRatings
         });
 
         const newChallenge = await challenge.save();
@@ -107,6 +118,9 @@ router.put('/:id', async (req, res) => {
         }
         if (typeof updates.presetComments === 'string') {
             try { updates.presetComments = JSON.parse(updates.presetComments); } catch (e) { }
+        }
+        if (typeof updates.ratingParameters === 'string') {
+            try { updates.ratingParameters = JSON.parse(updates.ratingParameters); } catch (e) { }
         }
 
         const challenge = await Challenge.findByIdAndUpdate(id, updates, { new: true });

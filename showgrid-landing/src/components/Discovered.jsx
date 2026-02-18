@@ -25,7 +25,7 @@ const Discovered = () => {
     const [userInteraction, setUserInteraction] = useState({ hasLiked: false, userRating: null });
 
     // Slider State
-    const [ratings, setRatings] = useState({ energy: 3.0, choreo: 3.0, sync: 3.0 });
+    const [ratings, setRatings] = useState({});
 
 
 
@@ -73,19 +73,24 @@ const Discovered = () => {
 
     // Calculate Average and Submit Rating
     useEffect(() => {
-        // Debounce or wait for user to stop sliding? 
-        // For now, we'll assume user will slide and we submit when they let go? 
-        // Actually, let's add a "Submit" or auto-submit on change with debounce if needed.
-        // But user asked to restore "previous rating ui". 
-        // Integrating calls: We'll calculate average and send to backend on change (debounced ideally) or just keep local state
-        // and add a button? No, let's auto-submit on touch end or just simple timeout.
         const timeoutId = setTimeout(() => {
-            if (currentVideo && user) {
-                const vals = Object.values(ratings);
-                const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-                // Only rate if changed significantly? 
-                // Let's just submit. Backend handles upsert.
-                rateVideo(currentVideo._id, Math.round(avg));
+            if (currentVideo && user && Object.keys(ratings).length > 0 && currentVideo.challengeId?.ratingParameters) {
+                const params = currentVideo.challengeId.ratingParameters;
+
+                let totalScore = 0;
+                let totalWeight = 0;
+
+                params.forEach(p => {
+                    const key = p.name.toLowerCase().replace(/\s+/g, '');
+                    const val = ratings[key] || 3.0; // Default to 3 if not set
+                    totalScore += val * p.weight;
+                    totalWeight += p.weight;
+                });
+
+                const weightedAvg = totalWeight > 0 ? (totalScore / totalWeight) : 3.0;
+
+                // Submit rounded rating (1-5)
+                rateVideo(currentVideo._id, Math.round(weightedAvg));
             }
         }, 1000);
         return () => clearTimeout(timeoutId);
@@ -93,15 +98,25 @@ const Discovered = () => {
 
 
     // Sync Sliders with existing User Rating
+    // Sync Sliders with existing User Rating or Defaults
     useEffect(() => {
-        if (userInteraction.userRating) {
-            setRatings({
-                energy: userInteraction.userRating,
-                choreo: userInteraction.userRating,
-                sync: userInteraction.userRating
+        if (currentVideo && currentVideo.challengeId) {
+            const params = currentVideo.challengeId.ratingParameters || [
+                { name: 'Energy', weight: 10 },
+                { name: 'Choreo', weight: 10 },
+                { name: 'Sync', weight: 10 }
+            ];
+
+            const newRatings = {};
+            params.forEach(p => {
+                const key = p.name.toLowerCase().replace(/\s+/g, '');
+                // If user has already rated, pre-fill with that overall rating or 3.0
+                // Ideally we'd store per-parameter rating but for now we just show global userRating
+                newRatings[key] = userInteraction.userRating || 3.0;
             });
+            setRatings(newRatings);
         }
-    }, [userInteraction.userRating]);
+    }, [currentVideo, userInteraction.userRating]);
 
     // Commenting Logic
     const [showComments, setShowComments] = useState(false);
@@ -248,9 +263,16 @@ const Discovered = () => {
     if (!currentVideo) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
 
     // Tags
-    const rawTags = currentVideo.judgeTags && currentVideo.judgeTags.length > 0 ? currentVideo.judgeTags : ['Energy', 'Choreo', 'Sync'];
-    const displayTags = [...rawTags];
-    while (displayTags.length < 3) displayTags.push(`Metric ${displayTags.length + 1}`);
+    // Tags / Rating Parameters
+    // We now use currentVideo.challengeId.ratingParameters
+    // Fallback to tags or default if missing
+    const displayParams = currentVideo.challengeId?.ratingParameters && currentVideo.challengeId.ratingParameters.length > 0
+        ? currentVideo.challengeId.ratingParameters
+        : [
+            { name: 'Energy', weight: 10 },
+            { name: 'Choreo', weight: 10 },
+            { name: 'Sync', weight: 10 }
+        ];
 
     return (
         <div
@@ -366,12 +388,13 @@ const Discovered = () => {
                                         </div>
                                     </div>
                                     <div className="space-y-5">
-                                        {displayTags.map((tag, index) => {
-                                            const tagStr = typeof tag === 'string' ? tag : `Tag ${index + 1}`;
-                                            const tagKey = typeof tag === 'string' ? tag.toLowerCase() : `tag${index}`;
+                                        {displayParams.map((param, index) => {
+                                            const tagStr = param.name;
+                                            const tagKey = param.name.toLowerCase().replace(/\s+/g, '');
                                             const val = ratings[tagKey] || 3.0;
                                             const accents = ['accent-cyan-400', 'accent-fuchsia-500', 'accent-lime-400', 'accent-yellow-400'];
                                             const glowColor = ['shadow-[0_0_10px_rgba(34,211,238,0.5)]', 'shadow-[0_0_10px_rgba(217,70,239,0.5)]', 'shadow-[0_0_10px_rgba(163,230,53,0.5)]', 'shadow-[0_0_10px_rgba(250,204,21,0.5)]'];
+
                                             return (
                                                 <div key={index}>
                                                     <div className="flex justify-between text-[10px] font-bold mb-1.5">
@@ -496,9 +519,9 @@ const Discovered = () => {
                                             </p>
                                         </div>
                                     ) : (
-                                        displayTags.map((tag, index) => {
-                                            const tagStr = typeof tag === 'string' ? tag : `Tag ${index + 1}`;
-                                            const tagKey = typeof tag === 'string' ? tag.toLowerCase() : `tag${index}`;
+                                        displayParams.map((param, index) => {
+                                            const tagStr = param.name;
+                                            const tagKey = param.name.toLowerCase().replace(/\s+/g, '');
                                             const val = ratings[tagKey] || 3.0;
 
                                             const accents = ['accent-cyan-400', 'accent-fuchsia-500', 'accent-lime-400', 'accent-yellow-400'];
