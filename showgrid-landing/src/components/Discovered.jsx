@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useVideo } from '../context/VideoContext';
 import { useUser, useClerk } from '@clerk/clerk-react';
-import { Play, Heart, MessageCircle, Share2, Music, ChevronUp, ChevronDown, Check, Home, Trophy, BarChart2, User, Lock } from 'lucide-react';
+import { Play, Heart, MessageCircle, Share2, Music, ChevronUp, ChevronDown, Check, Home, Trophy, BarChart2, User, Lock, Trash2, MapPin } from 'lucide-react';
 import Navbar from './Navbar';
 
 
 
 const Discovered = () => {
-    const { getApprovedVideos, getPresets, addComment, likeVideo, rateVideo, shareVideo, getVideoStats, getPublicVideoUrl, nativeShare } = useVideo();
+    const { getApprovedVideos, getPresets, addComment, deleteComment, likeVideo, rateVideo, shareVideo, getVideoStats, getPublicVideoUrl, nativeShare } = useVideo();
     const { initialVideoId } = useParams();
     const { user } = useUser();
     const { openSignIn } = useClerk();
@@ -27,6 +27,18 @@ const Discovered = () => {
     // Slider State
     const [ratings, setRatings] = useState({ energy: 3.0, choreo: 3.0, sync: 3.0 });
 
+
+
+    // Info Ticker State
+    const [infoMode, setInfoMode] = useState('song'); // 'song' | 'location'
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setInfoMode(prev => prev === 'song' ? 'location' : 'song');
+        }, 2000); // Toggle every 2 seconds
+        return () => clearInterval(interval);
+    }, []);
+
     const currentVideo = videos[currentIndex];
 
     useEffect(() => {
@@ -44,6 +56,9 @@ const Discovered = () => {
 
     const handleLike = async () => {
         if (!user) return openSignIn();
+        // Prevent owner from liking their own video
+        if (currentVideo && user.id === currentVideo.userId) return;
+
         const wasLiked = userInteraction.hasLiked;
         setUserInteraction(prev => ({ ...prev, hasLiked: !wasLiked }));
         setInteractionStats(prev => ({ ...prev, likes: prev.likes + (wasLiked ? -1 : 1) }));
@@ -276,17 +291,54 @@ const Discovered = () => {
                                         {currentVideo.challengeId?.title || 'Challenge'}
                                     </h4>
                                 </div>
-                                <h2 className="text-3xl font-extrabold text-white mb-4 leading-tight">
+                                <h2 className="text-3xl font-extrabold text-white mb-0.5 leading-tight">
                                     @{currentVideo.userName}
                                 </h2>
-                                <div className="flex flex-wrap gap-2">
-                                    {displayTags.map((tag, i) => (
-                                        <span key={i} className="px-3 py-1 bg-white/10 rounded-full text-xs font-bold text-white/90 backdrop-blur-md border border-white/5">
-                                            #{typeof tag === 'string' ? tag.replace(/\s+/g, '') : `Tag${i + 1}`}
-                                        </span>
-                                    ))}
-                                </div>
-                                {currentVideo.description && (
+                                {currentVideo.studioName && (
+                                    <p className="text-xs text-white/50 font-medium mb-3">
+                                        via {currentVideo.studioName}
+                                    </p>
+                                )}
+
+                                {currentVideo.challengeId && (
+                                    <div className="h-10 flex items-center">
+                                        {infoMode === 'song' && currentVideo.challengeId.songTitle ? (
+                                            <div className="flex items-center gap-2 mb-3 text-white/60 animate-in fade-in zoom-in duration-500">
+                                                <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
+                                                    <Music size={12} className="text-primary" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-bold text-white/90">{currentVideo.challengeId.songTitle}</span>
+                                                    {currentVideo.challengeId.artistName && <span className="text-[10px] text-white/50">{currentVideo.challengeId.artistName}</span>}
+                                                </div>
+                                            </div>
+                                        ) : infoMode === 'location' && currentVideo.city ? (
+                                            <div className="flex items-center gap-2 mb-3 text-white/60 animate-in fade-in zoom-in duration-500">
+                                                <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
+                                                    <MapPin size={12} className="text-blue-400" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-bold text-white/90">{currentVideo.city}</span>
+                                                    <span className="text-[10px] text-white/50">Location</span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            /* Fallback/Default to song */
+                                            currentVideo.challengeId.songTitle && (
+                                                <div className="flex items-center gap-2 mb-3 text-white/60 animate-in fade-in zoom-in duration-500">
+                                                    <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
+                                                        <Music size={12} className="text-primary" />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-bold text-white/90">{currentVideo.challengeId.songTitle}</span>
+                                                        {currentVideo.challengeId.artistName && <span className="text-[10px] text-white/50">{currentVideo.challengeId.artistName}</span>}
+                                                    </div>
+                                                </div>
+                                            )
+                                        )}
+                                    </div>
+                                )}
+                                {currentVideo.description && !currentVideo.description.startsWith('Performing from') && (
                                     <p className="border-t border-white/10 mt-4 pt-3 text-sm text-white/60 line-clamp-2">
                                         {currentVideo.description}
                                     </p>
@@ -342,22 +394,23 @@ const Discovered = () => {
                                     <ChevronUp size={24} color="white" />
                                 </button>
 
+                                {/* Like Button */}
                                 {(!user || user.id !== currentVideo.userId) && (
-                                    <>
-                                        <div className="flex flex-col items-center gap-1 group">
-                                            <div onClick={handleLike} className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center hover:bg-white/20 hover:scale-110 cursor-pointer transition-all shadow-lg">
-                                                <Heart size={24} fill={userInteraction.hasLiked ? "#ec4899" : "transparent"} color={userInteraction.hasLiked ? "#ec4899" : "white"} />
-                                            </div>
-                                            <span className="text-[10px] font-bold text-white shadow-black drop-shadow-md">{interactionStats.likes}</span>
+                                    <div className="flex flex-col items-center gap-1 group">
+                                        <div onClick={handleLike} className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center hover:bg-white/20 hover:scale-110 cursor-pointer transition-all shadow-lg">
+                                            <Heart size={24} fill={userInteraction.hasLiked ? "#ec4899" : "transparent"} color={userInteraction.hasLiked ? "#ec4899" : "white"} />
                                         </div>
-                                        <div className="flex flex-col items-center gap-1 group">
-                                            <div onClick={() => setShowComments(true)} className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center hover:bg-white/20 hover:scale-110 cursor-pointer transition-all shadow-lg">
-                                                <MessageCircle size={24} color="white" />
-                                            </div>
-                                            <span className="text-[10px] font-bold text-white shadow-black drop-shadow-md">{interactionStats.comments}</span>
-                                        </div>
-                                    </>
+                                        <span className="text-[10px] font-bold text-white shadow-black drop-shadow-md">{interactionStats.likes || 0}</span>
+                                    </div>
                                 )}
+
+                                {/* Comment Button */}
+                                <div className="flex flex-col items-center gap-1 group">
+                                    <div onClick={() => setShowComments(true)} className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center hover:bg-white/20 hover:scale-110 cursor-pointer transition-all shadow-lg">
+                                        <MessageCircle size={24} color="white" />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-white shadow-black drop-shadow-md">{currentVideo.comments?.length || 0}</span>
+                                </div>
 
                                 <div className="flex flex-col items-center gap-1 group">
                                     <div onClick={() => handleShare(currentVideo._id)} className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center hover:bg-white/20 hover:scale-110 cursor-pointer transition-all shadow-lg">
@@ -377,7 +430,7 @@ const Discovered = () => {
 
                 {/* Video Player Container */}
                 <div className={`relative h-full ${isMobile ? 'w-full' : 'aspect-[9/16] max-w-[500px] border-x border-white/5'}`} onClick={togglePlay}>
-                    <video ref={videoRef} src={currentVideo.videoUrl} className="w-full h-full object-cover" autoPlay loop playsInline />
+                    <video ref={videoRef} src={currentVideo.videoUrl} className="w-full h-full object-contain" autoPlay loop playsInline />
                     {!isPlaying && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10 pointer-events-none">
                             <Play size={64} fill="white" className="text-white opacity-80" />
@@ -386,20 +439,59 @@ const Discovered = () => {
 
                     {/* Mobile Controls Overlay */}
                     {isMobile && (
-                        <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col justify-end pb-[80px]">
-                            {/* User Info (Above Interaction Area) */}
-                            <div className="px-4 mb-2">
-                                <h3 className="text-lg font-bold text-white drop-shadow-md">@{currentVideo.userName}</h3>
-                                <p className="text-xs text-white/80 line-clamp-2">{currentVideo.description}</p>
-                            </div>
+                        <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col justify-end pb-[60px]">
+                            {/* Interaction Area (Dynamic Height) */}
+                            <div className="flex w-full h-auto items-end">
+                                {/* Left: Rating Sliders OR Info placement */}
+                                <div className="flex-1 flex flex-col justify-end px-4 gap-0 min-w-0">
 
-                            {/* Interaction Area (Auto Height, Min 180px) */}
-                            <div className="flex w-full min-h-[180px] h-auto items-end">
-                                {/* Left: Rating Sliders (Takes remaining space) */}
-                                <div className="flex-1 flex flex-col justify-end px-4 py-2 gap-3 min-w-0">
+                                    {/* User Info (Moved inside flex layout to stack properly above ratings) */}
+                                    <div className="-mb-2 shadow-black drop-shadow-md">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <div className="w-0.5 h-3 bg-primary rounded-full"></div>
+                                            <h3 className="text-[10px] font-bold text-white/80 uppercase tracking-widest">{currentVideo.challengeId?.title || 'Challenge'}</h3>
+                                        </div>
+                                        <h3 className="text-xl font-bold text-white mb-0.5">@{currentVideo.userName}</h3>
+                                        {currentVideo.studioName && (
+                                            <p className="text-[10px] text-white/50 font-medium mb-2">via {currentVideo.studioName}</p>
+                                        )}
+
+                                        {/* Song Info */}
+                                        {/* Info Ticker (Song <-> Location) */}
+                                        {/* Info Ticker (Song <-> Location) */}
+                                        {currentVideo.challengeId && (
+                                            <div className="h-9 flex items-center mb-1">
+                                                {infoMode === 'song' && currentVideo.challengeId.songTitle ? (
+                                                    <div className="flex items-center gap-1.5 text-white/70 animate-in fade-in zoom-in duration-500">
+                                                        <Music size={10} className="text-primary" />
+                                                        <span className="text-[10px] font-bold">{currentVideo.challengeId.songTitle}</span>
+                                                        {currentVideo.challengeId.artistName && <span className="text-[10px] opacity-70">- {currentVideo.challengeId.artistName}</span>}
+                                                    </div>
+                                                ) : infoMode === 'location' && currentVideo.city ? (
+                                                    <div className="flex items-center gap-1.5 text-white/70 animate-in fade-in zoom-in duration-500">
+                                                        <MapPin size={10} className="text-blue-400" />
+                                                        <span className="text-[10px] font-bold">{currentVideo.city}</span>
+                                                    </div>
+                                                ) : (
+                                                    currentVideo.challengeId.songTitle && (
+                                                        <div className="flex items-center gap-1.5 text-white/70">
+                                                            <Music size={10} className="text-primary" />
+                                                            <span className="text-[10px] font-bold">{currentVideo.challengeId.songTitle}</span>
+                                                        </div>
+                                                    )
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {currentVideo.description && !currentVideo.description.startsWith('Performing from') && (
+                                            <p className="text-xs text-white/80 line-clamp-2">{currentVideo.description}</p>
+                                        )}
+                                    </div>
+
+                                    {/* Rating Sliders Component */}
                                     {user && user.id === currentVideo.userId ? (
-                                        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-4 rounded-xl text-center">
-                                            <p className="text-white/60 text-xs italic">
+                                        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-3 rounded-xl text-center">
+                                            <p className="text-white/60 text-[10px] italic">
                                                 You cannot rate your own performance.
                                             </p>
                                         </div>
@@ -428,20 +520,21 @@ const Discovered = () => {
                                     )}
                                 </div>
 
-                                {/* Right: Action Buttons (Fixed width to prevent squishing) */}
-                                <div className="w-14 flex-none flex flex-col justify-end items-center gap-4 pb-2">
+                                {/* Right: Action Buttons */}
+                                <div className="w-14 flex-none flex flex-col justify-end items-center gap-4">
+                                    {/* Like Button */}
                                     {(!user || user.id !== currentVideo.userId) && (
-                                        <>
-                                            <div className="flex flex-col items-center gap-1" onClick={handleLike}>
-                                                <Heart size={24} fill={userInteraction.hasLiked ? "#ec4899" : "transparent"} color={userInteraction.hasLiked ? "#ec4899" : "white"} />
-                                                <span className="text-[10px] font-bold text-white">{interactionStats.likes}</span>
-                                            </div>
-                                            <div className="flex flex-col items-center gap-1" onClick={() => user ? setShowComments(true) : openSignIn()}>
-                                                <MessageCircle size={24} color="white" />
-                                                <span className="text-[10px] font-bold text-white">{interactionStats.comments}</span>
-                                            </div>
-                                        </>
+                                        <div className="flex flex-col items-center gap-1" onClick={handleLike}>
+                                            <Heart size={24} fill={userInteraction.hasLiked ? "#ec4899" : "transparent"} color={userInteraction.hasLiked ? "#ec4899" : "white"} />
+                                            <span className="text-[10px] font-bold text-white drop-shadow-md">{interactionStats.likes || 0}</span>
+                                        </div>
                                     )}
+
+                                    {/* Comment Button */}
+                                    <div className="flex flex-col items-center gap-1" onClick={() => user ? setShowComments(true) : openSignIn()}>
+                                        <MessageCircle size={24} color="white" />
+                                        <span className="text-[10px] font-bold text-white drop-shadow-md">{currentVideo.comments?.length || 0}</span>
+                                    </div>
 
                                     <div className="flex flex-col items-center gap-1" onClick={() => handleShare(currentVideo._id)}>
                                         <Share2 size={24} color="white" />
@@ -454,55 +547,121 @@ const Discovered = () => {
                 </div>
             </div>
 
-            {/* Comments Modal (Keeping as is, just ensuring visibility) */}
-            {
-                showComments && (
-                    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                        <div className="bg-[#111] border border-white/10 w-full max-w-md rounded-3xl p-6 relative">
-                            <button onClick={() => setShowComments(false)} className="absolute top-4 right-4 text-white/40 hover:text-white"><ChevronDown /></button>
-                            <h3 className="text-xl font-bold text-white mb-4">Comments</h3>
-                            {/* Simplified Comment UI for Brevity - Presets logic retained from state */}
-                            <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            {/* Comments Drawer - Animated Ease In/Out */}
+            <div className={`fixed inset-x-0 bottom-0 z-50 bg-[#111] border-t border-white/10 rounded-t-3xl transition-transform duration-300 ease-in-out flex flex-col max-h-[70vh] shadow-2xl shadow-black ${showComments ? 'translate-y-0' : 'translate-y-full'}`}>
+                {/* Drawer Header */}
+                <div className="flex items-center justify-between p-6 border-b border-white/5 relative bg-[#111] rounded-t-3xl z-10 shrink-0">
+                    <h3 className="text-xl font-bold text-white">Comments <span className="text-white/40 text-sm ml-2">{currentVideo.comments?.length || 0}</span></h3>
+                    <button onClick={() => setShowComments(false)} className="p-2 bg-white/5 rounded-full text-white/40 hover:text-white transition-colors">
+                        <ChevronDown size={20} />
+                    </button>
+                    {/* IOS-style handle */}
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/10 rounded-full" />
+                </div>
+
+                {/* Drawer Body - Scrollable */}
+                <div className="flex-grow overflow-y-auto p-6 space-y-8 pb-24">
+
+                    {/* 1. Presets Section (Pinned Top) */}
+                    {/* 1. Presets Section (Pinned Top) - Check if user is owner */}
+                    {user && currentVideo && user.id === currentVideo.userId ? (
+                        <div className="bg-white/5 p-4 rounded-xl text-center border border-white/10">
+                            <p className="text-white/60 text-xs italic">
+                                You cannot comment on your own performance.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest pl-1">Quick React</h4>
+                            <div className="space-y-4">
                                 {/* Positive */}
                                 {commentPresets.positive && commentPresets.positive.length > 0 && (
-                                    <div>
-                                        <h4 className="text-xs font-bold text-green-400 uppercase tracking-wider mb-2">Hype Them Up!</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {commentPresets.positive.map((text, i) => (
-                                                <button key={i} onClick={() => handlePresetComment(text, 'positive')} className="text-xs px-3 py-2 bg-green-500/10 border border-green-500/30 rounded-full text-green-100 hover:bg-green-500/20">{text}</button>
-                                            ))}
-                                        </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {commentPresets.positive.map((text, i) => (
+                                            <button key={i} onClick={() => handlePresetComment(text, 'positive')} className="text-xs px-3 py-2 bg-green-500/10 border border-green-500/30 rounded-full text-green-100 hover:bg-green-500/20 active:scale-95 transition-all">{text}</button>
+                                        ))}
                                     </div>
                                 )}
-
                                 {/* Neutral */}
                                 {commentPresets.neutral && commentPresets.neutral.length > 0 && (
-                                    <div>
-                                        <h4 className="text-xs font-bold text-yellow-400 uppercase tracking-wider mb-2">Observations</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {commentPresets.neutral.map((text, i) => (
-                                                <button key={i} onClick={() => handlePresetComment(text, 'neutral')} className="text-xs px-3 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-100 hover:bg-yellow-500/20">{text}</button>
-                                            ))}
-                                        </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {commentPresets.neutral.map((text, i) => (
+                                            <button key={i} onClick={() => handlePresetComment(text, 'neutral')} className="text-xs px-3 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-100 hover:bg-yellow-500/20 active:scale-95 transition-all">{text}</button>
+                                        ))}
                                     </div>
                                 )}
-
                                 {/* Negative */}
                                 {commentPresets.negative && commentPresets.negative.length > 0 && (
-                                    <div>
-                                        <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">Constructive</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {commentPresets.negative.map((text, i) => (
-                                                <button key={i} onClick={() => handlePresetComment(text, 'negative')} className="text-xs px-3 py-2 bg-purple-500/10 border border-purple-500/30 rounded-full text-purple-100 hover:bg-purple-500/20">{text}</button>
-                                            ))}
-                                        </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {commentPresets.negative.map((text, i) => (
+                                            <button key={i} onClick={() => handlePresetComment(text, 'negative')} className="text-xs px-3 py-2 bg-purple-500/10 border border-purple-500/30 rounded-full text-purple-100 hover:bg-purple-500/20 active:scale-95 transition-all">{text}</button>
+                                        ))}
                                     </div>
                                 )}
                             </div>
                         </div>
+                    )}
+
+                    {/* 2. Existing Comments List */}
+                    <div className="space-y-4">
+                        <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest pl-1">Discussion</h4>
+                        {currentVideo?.comments && currentVideo.comments.length > 0 ? (
+                            <div className="space-y-4">
+                                {currentVideo.comments.map((comment, index) => (
+                                    <div key={index} className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: `${index * 50}ms` }}>
+                                        <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0 overflow-hidden">
+                                            {comment.userAvatar ? (
+                                                <img src={comment.userAvatar} alt={comment.userName} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-xs font-bold text-white/40">
+                                                    {comment.userName ? comment.userName[0].toUpperCase() : '?'}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-baseline justify-between mb-0.5">
+                                                <div className="flex items-baseline gap-2">
+                                                    <span className="text-sm font-bold text-white mb-0.5 block">{comment.userName || 'Anonymous'}</span>
+                                                    <span className="text-[10px] text-white/30">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                                                </div>
+                                                {user && user.id === comment.userId && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (confirm('Delete this comment?')) {
+                                                                deleteComment(currentVideo._id, comment._id);
+                                                            }
+                                                        }}
+                                                        className="text-red-500 hover:text-red-400 transition-colors p-1"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-white/80 leading-relaxed bg-white/5 p-3 rounded-r-xl rounded-bl-xl border border-white/5">
+                                                {comment.text}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-10 opacity-50">
+                                <MessageCircle size={32} className="mx-auto mb-2 text-white/20" />
+                                <p className="text-sm text-white/40">No comments yet. Be the first to hype them!</p>
+                            </div>
+                        )}
                     </div>
-                )
-            }
+                </div>
+            </div>
+
+            {/* Backdrop for closing drawer */}
+            {showComments && (
+                <div
+                    className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm transition-opacity duration-300"
+                    onClick={() => setShowComments(false)}
+                />
+            )}
 
             {/* Mobile Nav logic handled by Navbar component externally usually, but if we want strictly full custom layout we might need to suppress it. 
                 However, Navbar.jsx has logic to always show on mobile. Steps to ensure it doesn't overlap content: 

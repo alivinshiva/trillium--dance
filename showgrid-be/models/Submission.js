@@ -26,6 +26,9 @@ const submissionSchema = new mongoose.Schema({
     city: {
         type: String
     },
+    studioName: {
+        type: String
+    },
     status: {
         type: String,
         enum: ['pending', 'approved', 'rejected'],

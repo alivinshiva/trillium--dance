@@ -1,3 +1,4 @@
 .scannerwork
 .sonarlint
 .scannerwork/.sonartmp/eslint-bridge-bundle/package/lib/server.d.ts
+run-sonar-analysis.sh

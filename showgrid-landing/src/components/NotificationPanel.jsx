@@ -1,8 +1,8 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { X, Bell, MessageSquare, Video, Info, CheckCheck } from 'lucide-react';
 import { useNotification } from '../context/NotificationContext';
-import { useVideo } from '../context/VideoContext';
+
 
 const NotificationPanel = () => {
     const {

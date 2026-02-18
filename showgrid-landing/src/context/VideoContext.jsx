@@ -101,6 +101,26 @@ export const VideoProvider = ({ children }) => {
         }
     }
 
+    // Delete Comment
+    const deleteComment = async (submissionId, commentId) => {
+        try {
+            const res = await fetch(`${API_URL}/submissions/${submissionId}/comments/${commentId}`, {
+                method: 'DELETE'
+            });
+
+            if (!res.ok) throw new Error('Failed to delete comment');
+
+            const updatedSubmission = await res.json();
+
+            // Update local state
+            setVideos(prev => prev.map(v => v._id === updatedSubmission._id ? updatedSubmission : v));
+            return updatedSubmission;
+        } catch (err) {
+            console.error("Error deleting comment:", err);
+            throw err;
+        }
+    };
+
     // Delete Video
     const deleteVideo = async (videoId) => {
         try {
@@ -275,6 +295,7 @@ export const VideoProvider = ({ children }) => {
             videos,
             addVideo,
             addComment,
+            deleteComment,
             deleteVideo,
             getApprovedVideos,
             getPendingVideos,

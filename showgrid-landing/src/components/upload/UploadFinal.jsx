@@ -86,9 +86,12 @@ const UploadFinal = () => {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('userId', user.id || 'guest');
-            formData.append('userName', studioName);
+            // FIX: Use actual user name for display, save studio name separately
+            formData.append('userName', user.fullName || user.username || 'Anonymous');
+            formData.append('studioName', studioName);
             formData.append('userAvatar', user.imageUrl || 'https://via.placeholder.com/150');
-            formData.append('description', `Performing from ${city}`);
+            // Removed "Performing from" per user request
+            formData.append('description', '');
             formData.append('city', city);
             formData.append('challengeId', selectedChallenge._id);
             formData.append('tags', JSON.stringify(selectedTags));

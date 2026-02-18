@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useVideo } from './context/VideoContext';
-import { Check, X, Shield, Plus, Calendar, Music, Layers, Search, Trash2, Play, AlertCircle, Edit2 } from 'lucide-react';
+import { Check, X, Shield, Plus, Calendar, Music, Layers, Search, Trash2, Play, AlertCircle, Edit2, Trophy } from 'lucide-react';
 
 const App = () => {
   const { getPendingVideos, updateVideoStatus, addChallenge, deleteChallenge, challenges, getPresets, videos } = useVideo();
@@ -568,41 +568,57 @@ const App = () => {
               </h2>
               <div className="space-y-4">
                 {challenges.map(challenge => (
-                  <div key={challenge._id} className="bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/10 transition-colors">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-bold">{challenge.title}</h3>
-                      <span className="text-[10px] bg-green-500/20 text-green-500 px-2 py-1 rounded font-bold">ACTIVE</span>
-                    </div>
-                    <p className="text-xs text-white/50 mb-4 line-clamp-2">{challenge.description}</p>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {challenge.tags.map((tag, i) => (
-                        <span key={i} className="text-[10px] bg-white/10 px-2 py-1 rounded text-white/70">#{tag}</span>
-                      ))}
-                    </div>
-                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/5">
-                      <div className="flex items-center gap-2 text-[10px] text-white/30">
-                        <Calendar size={12} />
-                        <span>{new Date(challenge.startDate).toLocaleDateString()} - {new Date(challenge.endDate).toLocaleDateString()}</span>
+                  <div key={challenge._id} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden hover:bg-white/10 transition-colors group">
+                    {/* Image Banner */}
+                    <div className="relative h-32 bg-black/40">
+                      {challenge.coverUrl ? (
+                        <img src={challenge.coverUrl} alt={challenge.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Trophy size={32} className="text-white/20" />
+                        </div>
+                      )}
+                      <div className="absolute top-2 right-2">
+                        <span className="text-[10px] bg-green-500/20 text-green-500 px-2 py-1 rounded font-bold backdrop-blur-md border border-green-500/10">ACTIVE</span>
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditClick(challenge)}
-                          className="text-primary hover:text-white p-2 hover:bg-white/10 rounded-full transition-colors"
-                          title="Edit Challenge"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm('Are you sure you want to delete this challenge? This action cannot be undone.')) {
-                              deleteChallenge(challenge._id);
-                            }
-                          }}
-                          className="text-red-500 hover:text-red-400 p-2 hover:bg-red-500/10 rounded-full transition-colors"
-                          title="Delete Challenge"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-4">
+                      <h3 className="font-bold text-lg mb-1">{challenge.title}</h3>
+                      <p className="text-xs text-white/50 mb-3 line-clamp-2">{challenge.description}</p>
+
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {challenge.tags.map((tag, i) => (
+                          <span key={i} className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-white/60">#{tag}</span>
+                        ))}
+                      </div>
+
+                      <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
+                        <div className="flex items-center gap-2 text-[10px] text-white/30">
+                          <Calendar size={12} />
+                          <span>{new Date(challenge.startDate).toLocaleDateString()} - {new Date(challenge.endDate).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditClick(challenge)}
+                            className="text-primary hover:text-white p-2 hover:bg-white/10 rounded-full transition-colors"
+                            title="Edit Challenge"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm('Are you sure you want to delete this challenge? This action cannot be undone.')) {
+                                deleteChallenge(challenge._id);
+                              }
+                            }}
+                            className="text-red-500 hover:text-red-400 p-2 hover:bg-red-500/10 rounded-full transition-colors"
+                            title="Delete Challenge"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

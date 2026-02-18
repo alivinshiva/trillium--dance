@@ -50,73 +50,68 @@ const Challenges = () => {
                                     return cId === challenge._id && v.status !== 'rejected';
                                 });
                                 return (
-                                    <div key={challenge._id} className={`group bg-white/5 border border-white/10 rounded-3xl overflow-hidden transition-all duration-300 flex flex-col relative ${hasJoined ? 'opacity-50 grayscale' : 'hover:border-primary/50 hover:-translate-y-2'}`}>
-                                        {/* Banner Image Background */}
-                                        {challenge.coverUrl ? (
-                                            <>
+                                    <div key={challenge._id} className={`group bg-white/5 border border-white/10 rounded-3xl overflow-hidden transition-all duration-300 flex flex-col relative ${hasJoined ? 'opacity-50' : 'hover:border-primary/50 hover:-translate-y-2'}`}>
+                                        {/* Banner Image Section - Top */}
+                                        <div className="relative h-48 bg-black/40">
+                                            {challenge.coverUrl ? (
                                                 <img
                                                     src={challenge.coverUrl}
                                                     alt={challenge.title}
-                                                    className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity duration-500"
+                                                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                                                 />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-[#000] via-black/80 to-transparent/50" />
-                                            </>
-                                        ) : (
-                                            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
-                                                <Trophy size={140} className="rotate-12" />
-                                            </div>
-                                        )}
-
-                                        <div className="p-8 flex-grow relative z-10">
-
-                                            <div className="flex justify-between items-start mb-6 relative z-10">
-                                                <div className="w-14 h-14 bg-gradient-to-br from-primary to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
-                                                    <Music size={28} className="text-white" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center">
+                                                    <Trophy size={48} className="text-white/20 rotate-12" />
                                                 </div>
-                                                <span className="bg-green-500/20 text-green-400 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-green-500/20">
+                                            )}
+
+                                            {/* Music Icon Overlay */}
+                                            <div className="absolute top-4 left-4 w-10 h-10 bg-black/60 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 shadow-lg">
+                                                <Music size={18} className="text-primary" />
+                                            </div>
+
+                                            {/* Active Badge Overlay */}
+                                            <div className="absolute top-4 right-4">
+                                                <span className="bg-green-500/20 text-green-400 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-green-500/20 backdrop-blur-md">
                                                     Active
                                                 </span>
                                             </div>
+                                        </div>
 
-                                            <h3 className="text-3xl font-bold mb-3 group-hover:text-primary transition-colors relative z-10">{challenge.title}</h3>
-                                            <p className="text-white/60 leading-relaxed mb-6 line-clamp-3 relative z-10">
+                                        {/* Content Body */}
+                                        <div className="p-6 flex-grow flex flex-col">
+                                            <h3 className="text-2xl font-bold mb-3 group-hover:text-primary transition-colors">{challenge.title}</h3>
+                                            <p className="text-white/60 leading-relaxed mb-6 line-clamp-3 flex-grow">
                                                 {challenge.description}
                                             </p>
 
-                                            <div className="flex flex-wrap gap-2 mb-6 relative z-10">
-                                                {challenge.tags.map((tag, i) => (
-                                                    <span key={i} className="text-xs font-bold bg-black/40 border border-white/10 px-3 py-1.5 rounded-lg text-white/80">
-                                                        #{tag}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div className="p-6 bg-black/20 border-t border-white/5 flex items-center justify-between relative z-10">
-                                            <div className="flex items-center gap-2 text-xs text-white/40 font-mono">
-                                                <Calendar size={14} />
-                                                <span>Ends {new Date(challenge.endDate).toLocaleDateString()}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        const url = `${window.location.origin}/challenges/${challenge._id}/upload`;
-                                                        navigator.clipboard.writeText(url);
-                                                        alert("Challenge link copied to clipboard!");
-                                                    }}
-                                                    className="p-2 text-white/40 hover:text-white transition-colors"
-                                                    title="Share Challenge"
-                                                >
-                                                    <Share2 size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={() => !hasJoined && handleJoinChallenge(challenge)}
-                                                    disabled={hasJoined}
-                                                    className={`btn px-6 py-2 text-xs uppercase tracking-widest border-none ${hasJoined ? 'bg-white/10 text-white/50 cursor-not-allowed' : 'btn-white hover:bg-primary hover:text-white'}`}
-                                                >
-                                                    {hasJoined ? 'Joined' : <>Join <ArrowRight size={16} /></>}
-                                                </button>
+                                            {/* Footer Actions */}
+                                            <div className="pt-6 border-t border-white/5 flex items-center justify-between mt-auto">
+                                                <div className="flex items-center gap-2 text-xs text-white/40 font-mono">
+                                                    <Calendar size={14} />
+                                                    <span>Ends {new Date(challenge.endDate).toLocaleDateString()}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const url = `${window.location.origin}/challenges/${challenge._id}/upload`;
+                                                            navigator.clipboard.writeText(url);
+                                                            alert("Challenge link copied to clipboard!");
+                                                        }}
+                                                        className="p-2 text-white/40 hover:text-white transition-colors"
+                                                        title="Share Challenge"
+                                                    >
+                                                        <Share2 size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => !hasJoined && handleJoinChallenge(challenge)}
+                                                        disabled={hasJoined}
+                                                        className={`btn px-5 py-2 text-xs uppercase tracking-widest border-none rounded-lg font-bold transition-colors ${hasJoined ? 'bg-white/10 text-white/50 cursor-not-allowed' : 'bg-white text-black hover:bg-primary hover:text-white'}`}
+                                                    >
+                                                        {hasJoined ? 'Joined' : <div className="flex items-center gap-1">Join <ArrowRight size={14} /></div>}
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

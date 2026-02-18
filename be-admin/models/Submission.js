@@ -11,6 +11,9 @@ const submissionSchema = new mongoose.Schema({
     userAvatar: {
         type: String
     },
+    studioName: {
+        type: String
+    },
     challengeId: {
         type: String,
         required: true
