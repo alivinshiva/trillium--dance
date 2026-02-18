@@ -39,7 +39,9 @@ async function main() {
 
         // 3. Connect to Gradio Client
         console.log("Connecting to Gradio API...");
-        const client = await Client.connect("prithivMLmods/Qwen3-VL-Outpost");
+        const client = await Client.connect("prithivMLmods/Qwen3-VL-Outpost", {
+            hf_token: process.env.HF_TOKEN
+        });
 
         // 4. Predict
         console.log("Sending request to AI model...");
