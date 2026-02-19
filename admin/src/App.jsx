@@ -275,6 +275,7 @@ const App = () => {
                   <th className="p-4">User</th>
                   <th className="p-4">Location</th>
                   <th className="p-4">Challenge</th>
+                  <th className="p-4">AI Score</th>
                   <th className="p-4 text-center">Video</th>
                   <th className="p-4">Status</th>
                   <th className="p-4 text-right">Actions</th>
@@ -299,7 +300,21 @@ const App = () => {
                     </td>
                     <td className="p-4 text-white/80">{video.city || '-'}</td>
                     <td className="p-4 text-primary font-medium">
-                      {video.challengeId?.title || 'Unknown Challenge'}
+                      {video.challengeId ? video.challengeId.title : <span className="text-white/30 italic">Unknown / Deleted</span>}
+                    </td>
+                    <td className="p-4">
+                      {video.aiRating && video.aiRating.final_grid_index ? (
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold ${video.aiRating.final_grid_index >= 8.5 ? 'text-green-400' :
+                            video.aiRating.final_grid_index >= 7.0 ? 'text-yellow-400' : 'text-white/60'
+                            }`}>
+                            {video.aiRating.final_grid_index.toFixed(1)}
+                          </span>
+                          <span className="text-[10px] text-white/30">/ 10</span>
+                        </div>
+                      ) : (
+                        <span className="text-white/20 text-xs">-</span>
+                      )}
                     </td>
                     <td className="p-4 text-center">
                       <button

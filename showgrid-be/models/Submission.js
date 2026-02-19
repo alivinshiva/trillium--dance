@@ -20,6 +20,16 @@ const submissionSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    aiRating: {
+        synchronization: Number,
+        musicality: Number,
+        energy_intensity: Number,
+        choreography_complexity: Number,
+        stage_utilization: Number,
+        visual_cleanliness: Number,
+        final_grid_index: Number,
+        verdict_summary: String
+    },
     description: {
         type: String
     },
