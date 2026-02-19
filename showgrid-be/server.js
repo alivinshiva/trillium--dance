@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const { ClerkExpressWithAuth } = require('./utils/auth');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -9,6 +10,7 @@ const PORT = process.env.PORT || 5001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(ClerkExpressWithAuth());
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
