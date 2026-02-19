@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const Submission = require('../models/Submission');
 const Notification = require('../models/Notification');
+const { generateAiRating } = require('../utils/aiRating');
 const { VideoRatingAggregate } = require('../models/Interaction');
 const { upload } = require('../config/cloudinary');
 const { requireAuth } = require('../utils/auth');
@@ -119,6 +120,20 @@ router.post('/', requireAuth, upload.single('file'), async (req, res) => {
 
         const newSubmission = await submission.save();
         res.status(201).json(newSubmission);
+
+        // Trigger AI Rating in Background
+        if (req.file.path) {
+            // We don't await this because we don't want to block the response
+            generateAiRating(req.file.path).then(async (rating) => {
+                if (rating) {
+                    console.log(`[AI-RATING] Saving rating for submission ${newSubmission._id}`);
+                    newSubmission.aiRating = rating;
+                    await newSubmission.save();
+                }
+            }).catch(err => {
+                console.error(`[AI-RATING] Background process failed for ${newSubmission._id}:`, err);
+            });
+        }
     } catch (err) {
         console.error("Submission Error:", err);
         res.status(500).json({ message: err.message });

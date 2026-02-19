@@ -4,12 +4,12 @@
 cleanup() {
     echo ""
     echo "🛑 Stopping all servers..."
-    # Kill all child processes in the same process group
-    kill 0
+    # Kill all child processes
+    kill $(jobs -p)
 }
 
 # Trap SIGINT (Ctrl+C) and SIGTERM
-trap cleanup SIGINT SIGTERM EXIT
+trap cleanup SIGINT SIGTERM
 
 echo "🚀 Starting all ShowGrid servers..."
 

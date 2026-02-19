@@ -16,7 +16,7 @@ export const NotificationProvider = ({ children }) => {
         if (!isSignedIn || !user) return;
 
         try {
-            const response = await fetch(`http://localhost:5001/api/notifications?userId=${user.id}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/notifications?userId=${user.id}`);
             if (response.ok) {
                 const data = await response.json();
                 setNotifications(data);
@@ -47,7 +47,7 @@ export const NotificationProvider = ({ children }) => {
             setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
             setUnreadCount(prev => Math.max(0, prev - 1));
 
-            await fetch(`http://localhost:5001/api/notifications/${id}/read`, { method: 'PATCH' });
+            await fetch(`${import.meta.env.VITE_API_URL}/notifications/${id}/read`, { method: 'PATCH' });
         } catch (error) {
             console.error("Failed to mark notification as read:", error);
             fetchNotifications(); // Revert on error
@@ -60,7 +60,7 @@ export const NotificationProvider = ({ children }) => {
             setNotifications(prev => prev.map(n => ({ ...n, read: true })));
             setUnreadCount(0);
 
-            await fetch(`http://localhost:5001/api/notifications/mark-all-read`, {
+            await fetch(`${import.meta.env.VITE_API_URL}/notifications/mark-all-read`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: user.id })

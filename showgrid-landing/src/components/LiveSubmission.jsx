@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Check, Share2, Instagram, MessageCircle, Play, Info, Upload } from 'lucide-react';
+import { Check, Share2, Instagram, MessageCircle, Play, Info, Upload, Zap, Activity, Music, Layers, Maximize, Eye } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 import { useVideo } from '../context/VideoContext';
 import Navbar from './Navbar';
@@ -194,6 +194,74 @@ const LiveSubmission = () => {
                                 <Instagram size={20} className="md:w-6 md:h-6" /> Instagram
                             </button>
                         </div>
+
+
+                        {/* AI Score Section */}
+                        {submission.aiRating && submission.aiRating.final_grid_index && (
+                            <div className="mb-12 w-full">
+                                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                                    <div className="w-1.5 h-6 bg-primary rounded-full"></div>
+                                    AI Performance Analysis
+                                </h3>
+
+                                <div className="bg-[#2a1b24] p-6 rounded-3xl border border-white/5 relative overflow-hidden">
+                                    {/* Score Header */}
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div>
+                                            <h4 className="text-white/60 text-sm font-bold uppercase tracking-wider mb-1">Grid Index Score</h4>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className={`text-4xl font-extrabold ${submission.aiRating.final_grid_index >= 8.5 ? 'text-green-400' :
+                                                    submission.aiRating.final_grid_index >= 7.0 ? 'text-yellow-400' : 'text-white'
+                                                    }`}>
+                                                    {submission.aiRating.final_grid_index.toFixed(1)}
+                                                </span>
+                                                <span className="text-white/30 text-lg">/ 10</span>
+                                            </div>
+                                        </div>
+                                        <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center">
+                                            <Activity size={24} className="text-primary" />
+                                        </div>
+                                    </div>
+
+                                    {/* Verdict */}
+                                    <div className="bg-black/20 p-4 rounded-xl border border-white/5 mb-6">
+                                        <p className="text-white/80 italic text-sm leading-relaxed">
+                                            "{submission.aiRating.verdict_summary}"
+                                        </p>
+                                    </div>
+
+                                    {/* Metrics Grid */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {[
+                                            { name: 'Synchronization', score: submission.aiRating.synchronization, icon: <Activity className="text-blue-400" size={16} />, color: 'bg-blue-500/10' },
+                                            { name: 'Musicality', score: submission.aiRating.musicality, icon: <Music className="text-purple-400" size={16} />, color: 'bg-purple-500/10' },
+                                            { name: 'Energy', score: submission.aiRating.energy_intensity, icon: <Zap className="text-yellow-400" size={16} />, color: 'bg-yellow-500/10' },
+                                            { name: 'Choreography', score: submission.aiRating.choreography_complexity, icon: <Layers className="text-pink-400" size={16} />, color: 'bg-pink-500/10' },
+                                            { name: 'Stage Use', score: submission.aiRating.stage_utilization, icon: <Maximize className="text-green-400" size={16} />, color: 'bg-green-500/10' },
+                                            { name: 'Cleanliness', score: submission.aiRating.visual_cleanliness, icon: <Eye className="text-cyan-400" size={16} />, color: 'bg-cyan-500/10' },
+                                        ].map((metric) => (
+                                            <div key={metric.name} className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5">
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${metric.color}`}>
+                                                    {metric.icon}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="text-xs text-white/50 font-bold uppercase">{metric.name}</span>
+                                                        <span className="text-white font-bold text-sm">{metric.score}</span>
+                                                    </div>
+                                                    <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
+                                                        <div
+                                                            className={`h-full rounded-full ${metric.score >= 8 ? 'bg-green-500' : metric.score >= 6 ? 'bg-yellow-500' : 'bg-white/40'}`}
+                                                            style={{ width: `${(metric.score / 10) * 100}%` }}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Copy Link */}
                         <div className="bg-[#2a1b24] rounded-full p-1.5 pl-4 md:pl-6 flex items-center justify-between border border-white/5 mb-12 mx-2">

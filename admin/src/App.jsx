@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useVideo } from './context/VideoContext';
 import { Check, X, Shield, Plus, Calendar, Music, Layers, Search, Trash2, Play, AlertCircle, Edit2, Trophy } from 'lucide-react';
+import ScoreModal from './components/ScoreModal';
 
 const App = () => {
   const { getPendingVideos, updateVideoStatus, addChallenge, deleteChallenge, challenges, getPresets, videos } = useVideo();
@@ -9,6 +10,7 @@ const App = () => {
 
   // Submissions State
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const [selectedScoreVideo, setSelectedScoreVideo] = useState(null); // For AI Score Modal
   const [actionVideo, setActionVideo] = useState(null);
   const [actionType, setActionType] = useState(null); // 'approve' | 'rejected'
   const [adminMessage, setAdminMessage] = useState('');
@@ -304,7 +306,13 @@ const App = () => {
                     </td>
                     <td className="p-4">
                       {video.aiRating && video.aiRating.final_grid_index ? (
-                        <div className="flex items-center gap-2">
+                        <div
+                          className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedScoreVideo(video);
+                          }}
+                        >
                           <span className={`font-bold ${video.aiRating.final_grid_index >= 8.5 ? 'text-green-400' :
                             video.aiRating.final_grid_index >= 7.0 ? 'text-yellow-400' : 'text-white/60'
                             }`}>
@@ -727,6 +735,13 @@ const App = () => {
             </div>
           </div>
         )}
+        {/* Score Modal */}
+        <ScoreModal
+          isOpen={!!selectedScoreVideo}
+          onClose={() => setSelectedScoreVideo(null)}
+          aiRating={selectedScoreVideo?.aiRating}
+        />
+
         {/* Video Player Modal */}
         {selectedVideo && (
           <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur flex items-center justify-center p-4">
