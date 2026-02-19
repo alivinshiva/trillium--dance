@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { useUser } from '@clerk/clerk-react';
+import { useUser, useAuth } from '@clerk/clerk-react';
 
 const VideoContext = createContext();
 
@@ -7,6 +7,7 @@ export const useVideo = () => useContext(VideoContext);
 
 export const VideoProvider = ({ children }) => {
     const { user } = useUser();
+    const { getToken } = useAuth();
 
     // Videos - Now fetched from Backend (Submissions)
     const [videos, setVideos] = useState([]);
@@ -55,10 +56,14 @@ export const VideoProvider = ({ children }) => {
     // Add Video - Adjusted for FormData (Multipart)
     const addVideo = async (formData) => {
         try {
+            const token = await getToken();
             // Note: Content-Type header should NOT be set manually when sending FormData
             // The browser sets it automatically with the boundary
             const res = await fetch(`${API_URL}/submissions`, {
                 method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
                 body: formData
             });
 
@@ -79,10 +84,12 @@ export const VideoProvider = ({ children }) => {
     // Add Comment - Post to backend
     const addComment = async (submissionId, commentData) => {
         try {
+            const token = await getToken();
             const res = await fetch(`${API_URL}/submissions/${submissionId}/comments`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(commentData)
             });
@@ -104,8 +111,12 @@ export const VideoProvider = ({ children }) => {
     // Delete Comment
     const deleteComment = async (submissionId, commentId) => {
         try {
+            const token = await getToken();
             const res = await fetch(`${API_URL}/submissions/${submissionId}/comments/${commentId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
 
             if (!res.ok) throw new Error('Failed to delete comment');
@@ -124,8 +135,12 @@ export const VideoProvider = ({ children }) => {
     // Delete Video
     const deleteVideo = async (videoId) => {
         try {
+            const token = await getToken();
             const res = await fetch(`${API_URL}/submissions/${videoId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
 
             if (!res.ok) {
@@ -146,9 +161,13 @@ export const VideoProvider = ({ children }) => {
 
     const likeVideo = async (videoId) => {
         try {
+            const token = await getToken();
             const res = await fetch(`${API_URL}/interactions/like`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ videoId, userId: user.id })
             });
             if (!res.ok) throw new Error('Failed to like video');
@@ -161,9 +180,13 @@ export const VideoProvider = ({ children }) => {
 
     const rateVideo = async (videoId, rating) => {
         try {
+            const token = await getToken();
             const res = await fetch(`${API_URL}/interactions/rate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ videoId, userId: user.id, rating })
             });
             if (!res.ok) throw new Error('Failed to rate video');
@@ -176,9 +199,13 @@ export const VideoProvider = ({ children }) => {
 
     const shareVideo = async (videoId, targetType = 'external') => {
         try {
+            const token = await getToken();
             await fetch(`${API_URL}/interactions/share`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ videoId, userId: user ? user.id : 'guest', targetType })
             });
         } catch (err) {
@@ -267,9 +294,13 @@ export const VideoProvider = ({ children }) => {
 
     const updateSubmissionStatus = async (submissionId, status, message) => {
         try {
+            const token = await getToken();
             const res = await fetch(`${API_URL}/submissions/${submissionId}/status`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ status, message })
             });
 

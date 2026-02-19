@@ -5,6 +5,7 @@ const Submission = require('../models/Submission');
 const Notification = require('../models/Notification');
 const { VideoRatingAggregate } = require('../models/Interaction');
 const { upload } = require('../config/cloudinary');
+const { requireAuth } = require('../utils/auth');
 
 // GET Leaderboard (Submissions sorted by rating)
 router.get('/leaderboard', async (req, res) => {
@@ -84,7 +85,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST a new submission (with video upload)
-router.post('/', upload.single('file'), async (req, res) => {
+router.post('/', requireAuth, upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded' });
@@ -125,7 +126,7 @@ router.post('/', upload.single('file'), async (req, res) => {
 });
 
 // POST a comment to a submission
-router.post('/:id/comments', async (req, res) => {
+router.post('/:id/comments', requireAuth, async (req, res) => {
     try {
         const { userId, userName, userAvatar, text, type } = req.body;
         const submission = await Submission.findById(req.params.id);
@@ -165,7 +166,7 @@ router.post('/:id/comments', async (req, res) => {
 });
 
 // DELETE a comment
-router.delete('/:id/comments/:commentId', async (req, res) => {
+router.delete('/:id/comments/:commentId', requireAuth, async (req, res) => {
     try {
         const { id, commentId } = req.params;
         const submission = await Submission.findById(id);
@@ -192,7 +193,7 @@ router.delete('/:id/comments/:commentId', async (req, res) => {
 });
 
 // DELETE a submission
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
     try {
         const submission = await Submission.findByIdAndDelete(req.params.id);
         if (!submission) {
@@ -205,7 +206,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // PUT update submission status (Approve/Reject)
-router.put('/:id/status', async (req, res) => {
+router.put('/:id/status', requireAuth, async (req, res) => {
     try {
         const { status, message } = req.body; // status: 'approved' | 'rejected'
         const submission = await Submission.findById(req.params.id);
