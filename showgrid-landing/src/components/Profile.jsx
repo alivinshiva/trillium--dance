@@ -1,28 +1,107 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useUser, SignOutButton } from '@clerk/clerk-react';
 import {
     Home, Trophy, BarChart2, User, Settings, Edit, MapPin, Zap,
-    LogOut, ChevronRight, Star, ExternalLink, Check, Trash2, Bell, Share2
+    LogOut, ChevronRight, Star, ExternalLink, Check, Trash2, Bell, Share2, Clock, X
 } from 'lucide-react';
 import Navbar from './Navbar';
 import { useVideo } from '../context/VideoContext';
 import { useNotification } from '../context/NotificationContext';
 
+import { useRef, useState } from 'react';
+
+const VideoCard = ({ video, handleShare, deleteVideo }) => {
+    const videoRef = useRef(null);
+    const [spanClass, setSpanClass] = useState('col-span-1 row-span-1');
+
+    const handleLoadedMetadata = () => {
+        const { videoWidth, videoHeight } = videoRef.current;
+        if (videoWidth < videoHeight) {
+            // Vertical video -> Taller card
+            setSpanClass('col-span-1 row-span-2');
+        } else {
+            // Horizontal/Square -> Standard card
+            setSpanClass('col-span-1 row-span-1');
+        }
+    };
+
+    return (
+        <div className={`bg-[#111] border border-white/10 rounded-xl overflow-hidden group hover:border-white/30 transition-colors flex flex-col ${spanClass}`}>
+            <Link to={`/discovered/feed/${video._id}`} className="flex-1 relative bg-black block group-hover:scale-[1.02] transition-transform duration-500">
+                <video
+                    ref={videoRef}
+                    src={video.videoUrl}
+                    className="w-full h-full object-cover absolute inset-0"
+                    onLoadedMetadata={handleLoadedMetadata}
+                    muted
+                    playsInline
+                />
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
+
+                {/* Status Badge - Icon Only */}
+                <div className={`absolute top-2 right-2 w-8 h-8 rounded-full shadow-lg flex items-center justify-center backdrop-blur-md ${video.status === 'approved' ? 'bg-green-500/90 text-white' :
+                    video.status === 'rejected' ? 'bg-red-500/90 text-white' :
+                        'bg-yellow-500/90 text-black'
+                    }`}
+                    title={video.status || 'Pending'}
+                >
+                    {video.status === 'approved' ? <Check size={16} strokeWidth={3} /> :
+                        video.status === 'rejected' ? <X size={16} strokeWidth={3} /> :
+                            <Clock size={16} strokeWidth={3} />}
+                </div>
+            </Link>
+
+            <div className="p-4 bg-[#111] z-10 relative">
+                <div className="flex justify-between items-start mb-1">
+                    <h4 className="font-bold text-sm truncate flex-1 text-primary">{video.challengeId?.title || 'Challenge'}</h4>
+                    <div className="flex gap-1">
+                        <button
+                            onClick={(e) => handleShare(e, video._id)}
+                            className="text-white/20 hover:text-white transition-colors p-1"
+                            title="Share Video"
+                        >
+                            <Share2 size={14} />
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault(); // Prevent navigation
+                                if (confirm('Are you sure you want to delete this video?')) {
+                                    deleteVideo(video._id).catch(err => alert(err.message));
+                                }
+                            }}
+                            className="text-white/20 hover:text-red-500 transition-colors p-1"
+                            title="Delete Video"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    </div>
+                </div>
+                <p className="text-[10px] text-white/50 mb-3 truncate">{video.description}</p>
+                <div className="flex items-center justify-between text-[10px] text-white/30 font-bold uppercase">
+                    <span>{new Date(video.createdAt).toLocaleDateString()}</span>
+                    {video.status === 'approved' && (
+                        <span className="text-green-500 flex items-center gap-1">
+                            <Check size={10} /> Live
+                        </span>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const Profile = () => {
     const { user, isLoaded } = useUser();
     const { getUserVideos, deleteVideo, getPublicVideoUrl, nativeShare } = useVideo();
     const { unreadCount, togglePanel } = useNotification();
+    const navigate = useNavigate();
     const userVideos = getUserVideos();
 
-    const handleShare = async (e, videoId) => {
+    const handleShare = (e, videoId) => {
         e.preventDefault(); // Prevent grid item click
         e.stopPropagation();
 
-        await nativeShare({
-            videoId,
-            title: 'My Video on ShowGrid',
-            text: 'Check out my performance on ShowGrid!'
-        });
+        navigate(`/submission-live/${videoId}`);
     };
 
     if (!isLoaded) {
@@ -253,54 +332,14 @@ const Profile = () => {
                             </Link>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 auto-rows-[150px] md:auto-rows-[300px] grid-flow-dense">
                             {userVideos.map((video) => (
-                                <Link to={`/discovered/feed/${video._id}`} key={video._id} className="bg-[#111] border border-white/10 rounded-xl overflow-hidden group hover:border-white/30 transition-colors block">
-                                    <div className="h-32 relative bg-black">
-                                        <video src={video.videoUrl} className="w-full h-full object-cover" />
-
-                                        {/* Status Badge */}
-                                        <div className={`absolute top-2 right-2 px-2 py-1 rounded shadow-lg text-[10px] font-bold uppercase tracking-wider ${video.status === 'approved' ? 'bg-green-500 text-white' :
-                                            video.status === 'rejected' ? 'bg-red-500 text-white' :
-                                                'bg-yellow-500 text-black'
-                                            }`}>
-                                            {video.status || 'Pending'}
-                                        </div>
-                                    </div>
-                                    <div className="p-4">
-                                        <div className="flex justify-between items-start mb-1">
-                                            <h4 className="font-bold text-sm truncate flex-1 text-primary">{video.challengeId?.title || 'Challenge'}</h4>
-                                            <button
-                                                onClick={(e) => handleShare(e, video._id)}
-                                                className="text-white/20 hover:text-white transition-colors p-1"
-                                                title="Share Video"
-                                            >
-                                                <Share2 size={14} />
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.preventDefault(); // Prevent navigation
-                                                    if (confirm('Are you sure you want to delete this video?')) {
-                                                        deleteVideo(video._id).catch(err => alert(err.message));
-                                                    }
-                                                }}
-                                                className="text-white/20 hover:text-red-500 transition-colors p-1 -mr-2 -mt-1"
-                                                title="Delete Video"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                        <p className="text-[10px] text-white/50 mb-3 truncate">{video.description}</p>
-                                        <div className="flex items-center justify-between text-[10px] text-white/30 font-bold uppercase">
-                                            <span>{new Date(video.createdAt).toLocaleDateString()}</span>
-                                            {video.status === 'approved' && (
-                                                <span className="text-green-500 flex items-center gap-1">
-                                                    <Check size={10} /> Live on Grid
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </Link>
+                                <VideoCard
+                                    key={video._id}
+                                    video={video}
+                                    handleShare={handleShare}
+                                    deleteVideo={deleteVideo}
+                                />
                             ))}
                         </div>
                     )}

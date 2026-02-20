@@ -57,7 +57,20 @@ const Navbar = () => {
               <Link to="/leaderboard" className="text-white/70 hover:text-white text-sm font-semibold tracking-wider transition-colors">LEADERBOARD</Link>
             </div>
 
-            <div className="block z-20">
+            <div className="flex items-center gap-4 z-20">
+              {isSignedIn && (
+                <button
+                  onClick={togglePanel}
+                  className="relative p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-all"
+                  title="Notifications"
+                >
+                  <Bell size={20} />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-black animate-pulse"></span>
+                  )}
+                </button>
+              )}
+
               {isSignedIn ? (
                 <Link to="/profile" className="flex items-center gap-3 pl-1 pr-4 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-full transition-all">
                   <img src={user.imageUrl} alt="Profile" className="w-8 h-8 rounded-full" />

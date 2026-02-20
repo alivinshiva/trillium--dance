@@ -15,8 +15,13 @@ const submissionSchema = new mongoose.Schema({
         type: String
     },
     challengeId: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Challenge',
         required: true
+    },
+    aiRating: {
+        type: Object,
+        required: false
     },
     videoUrl: {
         type: String,

@@ -87,10 +87,10 @@ const Challenges = () => {
 
                                             {/* Footer Actions */}
                                             <div className="pt-6 border-t border-white/5 flex items-center justify-between mt-auto">
-                                                <div className="flex items-center gap-2 text-xs text-white/40 font-mono">
+                                                <Link to={`/challenges/${challenge._id}/details`} className="flex items-center gap-2 text-xs text-white/40 font-mono hover:text-primary transition-colors cursor-pointer">
                                                     <Calendar size={14} />
                                                     <span>Ends {new Date(challenge.endDate).toLocaleDateString()}</span>
-                                                </div>
+                                                </Link>
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={(e) => {

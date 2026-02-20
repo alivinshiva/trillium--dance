@@ -19,6 +19,7 @@ import Discovered from './components/Discovered';
 import Challenges from './components/Challenges';
 import Leaderboard from './components/Leaderboard';
 import Profile from './components/Profile';
+import ChallengeDetails from './components/ChallengeDetails';
 import Dashboard from './components/Dashboard';
 
 const LandingPage = () => {
@@ -90,6 +91,7 @@ function App() {
 
         {/* Main App Routes */}
         <Route path="/challenges" element={<Challenges />} />
+        <Route path="/challenges/:challengeId/details" element={<ChallengeDetails />} />
 
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/leaderboard/:challengeId" element={<Leaderboard />} />

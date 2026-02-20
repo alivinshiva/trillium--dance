@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Play, Upload, MessageSquare, TrendingUp } from 'lucide-react';
+import { Play, TrendingUp } from 'lucide-react';
 import heroBg from '../assets/hero-bg.png';
 
 const Hero = () => {

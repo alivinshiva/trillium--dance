@@ -267,11 +267,11 @@ export const VideoProvider = ({ children }) => {
         return `${window.location.origin}/discovered/feed/${videoId}`;
     };
 
-    const nativeShare = async ({ videoId, title, text }) => {
+    const nativeShare = async ({ videoId, title, text, url: customUrl }) => {
         // Track the share
         shareVideo(videoId);
 
-        const url = getPublicVideoUrl(videoId);
+        const url = customUrl || getPublicVideoUrl(videoId);
         const shareData = {
             title: title || 'Check out this video on ShowGrid!',
             text: text || 'Watch this amazing performance!',

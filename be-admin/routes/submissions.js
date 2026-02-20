@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
         if (req.query.userId) filter.userId = req.query.userId;
         if (req.query.challengeId) filter.challengeId = req.query.challengeId;
 
-        const submissions = await Submission.find(filter).sort({ createdAt: -1 });
+        const submissions = await Submission.find(filter).sort({ createdAt: -1 }).populate('challengeId');
         res.json(submissions);
     } catch (err) {
         res.status(500).json({ message: err.message });
