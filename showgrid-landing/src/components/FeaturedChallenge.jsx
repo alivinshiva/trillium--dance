@@ -121,15 +121,15 @@ const FeaturedChallenge = ({ challenge }) => {
                 <div className="text-center relative z-10">
                     <h3 className="text-primary font-bold text-xs md:text-sm tracking-[0.2em] uppercase mb-6 md:mb-8">{timeLeft.label}</h3>
 
-                    <div className="flex flex-nowrap justify-center gap-2 md:gap-8 overflow-x-auto pb-2 md:pb-0">
+                    <div className="flex flex-wrap justify-center gap-3 md:gap-8">
                         {[
                             { val: timeLeft.days, label: 'DAYS' },
                             { val: timeLeft.hours, label: 'HOURS' },
                             { val: timeLeft.minutes, label: 'MINUTES' },
                             { val: timeLeft.seconds, label: 'SECONDS', highlight: true }
                         ].map((item, i) => (
-                            <div key={i} className="flex flex-col items-center min-w-[60px] md:min-w-auto">
-                                <div className={`w-14 h-16 md:w-32 md:h-40 ${item.highlight ? 'bg-primary text-white shadow-[0_0_30px_rgba(236,72,153,0.3)]' : 'bg-dark text-white border border-white/5'} rounded-xl md:rounded-2xl flex items-center justify-center text-2xl md:text-7xl font-black tabular-nums mb-2 relative overflow-hidden group`}>
+                            <div key={i} className="flex flex-col items-center flex-1 min-w-[60px] max-w-[80px] md:max-w-none md:min-w-auto">
+                                <div className={`w-full h-16 md:w-32 md:h-40 ${item.highlight ? 'bg-primary text-white shadow-[0_0_30px_rgba(236,72,153,0.3)]' : 'bg-dark text-white border border-white/5'} rounded-xl md:rounded-2xl flex items-center justify-center text-2xl md:text-7xl font-black tabular-nums mb-2 relative overflow-hidden group`}>
                                     <span className="relative z-10">{String(item.val).padStart(2, '0')}</span>
                                     {/* Shine effect */}
                                     {item.highlight && <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>}
