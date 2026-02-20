@@ -6,3 +6,4 @@ admin/.env
 .DS_Store
 ai-rating/node_modules/*
 JULES_PROMPT.md
+all_environments.txt
