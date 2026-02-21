@@ -8,4 +8,6 @@ ai-rating/node_modules/*
 JULES_PROMPT.md
 all_environments.txt
 .jules/sentinel.md
-.vscode/settings.json
+.vscode
+.jules/sentinel.md
+.jules
