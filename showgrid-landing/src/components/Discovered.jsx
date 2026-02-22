@@ -17,7 +17,28 @@ const Discovered = () => {
     const [videos, setVideos] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(true);
+    const [progress, setProgress] = useState(0);
     const videoRef = React.useRef(null);
+
+    const handleTimeUpdate = () => {
+        if (videoRef.current) {
+            const current = videoRef.current.currentTime;
+            const duration = videoRef.current.duration;
+            if (duration > 0) {
+                setProgress((current / duration) * 100);
+            }
+        }
+    };
+
+    const handleSeek = (e) => {
+        if (videoRef.current) {
+            const percent = parseFloat(e.target.value);
+            const seekTime = (percent / 100) * videoRef.current.duration;
+            videoRef.current.currentTime = seekTime;
+            setProgress(percent);
+        }
+    };
+
     // Mobile Detection
     const [isMobile, setIsMobile] = useState(false);
     // Interaction State
@@ -43,6 +64,7 @@ const Discovered = () => {
 
     useEffect(() => {
         if (currentVideo) {
+            setProgress(0); // Reset progress on video change
             const loadStats = async () => {
                 const data = await getVideoStats(currentVideo._id);
                 if (data) {
@@ -453,12 +475,32 @@ const Discovered = () => {
 
                 {/* Video Player Container */}
                 <div className={`relative h-full ${isMobile ? 'w-full' : 'aspect-[9/16] max-w-[500px] border-x border-white/5'}`} onClick={togglePlay}>
-                    <video ref={videoRef} src={currentVideo.videoUrl} className="w-full h-full object-contain" autoPlay loop playsInline />
+                    <video ref={videoRef} src={currentVideo.videoUrl} className="w-full h-full object-contain" autoPlay loop playsInline onTimeUpdate={handleTimeUpdate} />
                     {!isPlaying && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10 pointer-events-none">
                             <Play size={64} fill="white" className="text-white opacity-80" />
                         </div>
                     )}
+
+                    {/* Seek Bar */}
+                    <div
+                        className={`absolute inset-x-0 z-30 h-0.5 bg-gray-500/50 cursor-pointer ${isMobile ? 'bottom-[53px]' : 'bottom-0'}`}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            value={progress || 0}
+                            onChange={handleSeek}
+                            className="w-full h-full absolute inset-0 opacity-0 cursor-pointer z-40 m-0 p-0"
+                        />
+                        <div
+                            className="h-full bg-white relative z-30 pointer-events-none transition-all duration-75"
+                            style={{ width: `${progress}%` }}
+                        />
+                    </div>
 
                     {/* Mobile Controls Overlay */}
                     {isMobile && (
