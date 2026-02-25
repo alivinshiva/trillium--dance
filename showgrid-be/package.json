@@ -11,8 +11,8 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "@clerk/clerk-sdk-node": "^4.13.23",
-    "@gradio/client": "^2.0.4",
     "cloudinary": "^1.41.3",
     "cors": "^2.8.6",
     "dotenv": "^17.2.4",

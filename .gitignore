@@ -12,3 +12,5 @@ all_environments.txt
 .jules/sentinel.md
 .jules
 .agent
+plan.txt
+admin/.env

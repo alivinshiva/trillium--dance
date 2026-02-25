@@ -1,4 +1,4 @@
-const { Client } = require("@gradio/client");
+const Anthropic = require('@anthropic-ai/sdk');
 
 const SYSTEM_PROMPT = `You are the Grid Index Scoring Engine.
 
@@ -115,34 +115,31 @@ async function generateAiRating(videoUrl) {
             };
         }
 
-        console.log(`[AI-RATING] Fetching video blob...`);
-        const response = await fetch(videoUrl);
-        if (!response.ok) throw new Error(`Failed to fetch video from Cloudinary: ${response.statusText}`);
-        const videoBlob = await response.blob();
-
-        console.log("[AI-RATING] Connecting to Gradio API...");
-        const client = await Client.connect("prithivMLmods/Qwen3-VL-Outpost", {
-            hf_token: process.env.HF_TOKEN
+        // For Claude, we cannot send the video blob directly in current API versions,
+        // so we'll pass the video URL and rely on any extracted text/metrics if available, 
+        // or a descriptive prompt until frame extraction is implemented.
+        console.log("[AI-RATING] Connecting to Anthropic API...");
+        const anthropic = new Anthropic({
+            apiKey: process.env.ANTHROPIC_API_KEY, // Set this in your .env file
         });
 
-        console.log("[AI-RATING] Sending request to AI model...");
-        const result = await client.predict("/generate_video", {
-            model_name: "Qwen3-VL-4B-Instruct",
-            text: SYSTEM_PROMPT,
-            video_path: videoBlob,
-            max_new_tokens: 1024,
+        console.log("[AI-RATING] Sending request to Claude AI...");
+        const result = await anthropic.messages.create({
+            model: "claude-opus-4-6", // Use the latest Claude 3.5 Sonnet
+            max_tokens: 1024,
             temperature: 0.6,
-            top_p: 0.9,
-            top_k: 50,
-            repetition_penalty: 1.2,
-            gpu_timeout: 45, // Increased timeout 
+            system: SYSTEM_PROMPT,
+            messages: [
+                {
+                    role: "user",
+                    content: `Please evaluate the dance performance found at this video URL:\n${videoUrl}\n\nReturn ONLY the JSON struct requested.`
+                }
+            ]
         });
 
-        if (result.data && result.data.length > 0) {
+        if (result && result.content && result.content.length > 0) {
             console.log("[AI-RATING] Success!");
-            // The result is usually a JSON string in markdown code block or just string.
-            // We need to parse it.
-            let rawOutput = result.data[0];
+            let rawOutput = result.content[0].text;
 
             // Clean up markdown code blocks if present
             rawOutput = rawOutput.replace(/```json/g, '').replace(/```/g, '').trim();
