@@ -5,10 +5,15 @@ const cors = require('cors');
 const { ClerkExpressWithAuth } = require('./utils/auth');
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: "https://dance.shivam-trillium.workers.dev",
+    credentials: true,
+    methods: "GET,POST,PUT,DELETE",
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json());
 app.use(ClerkExpressWithAuth());
 
