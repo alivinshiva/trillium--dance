@@ -4,6 +4,17 @@ const Challenge = require('../models/Challenge');
 
 const parseComments = require('../utils/parseComments');
 
+// POST create challenge
+router.post('/', async (req, res) => {
+    try {
+        const challenge = new Challenge(req.body);
+        await challenge.save();
+        res.status(201).json(challenge);
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+});
+
 // GET parsed presets
 router.get('/presets', (req, res) => {
     try {

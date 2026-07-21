@@ -25,6 +25,7 @@ mongoose.connect(process.env.MONGO_URI)
 // Routes
 const challengeRoutes = require('./routes/challenges');
 const submissionRoutes = require('./routes/submissions');
+const feedRoutes = require('./routes/feed');
 const interactionRoutes = require('./routes/interactions');
 const notificationRoutes = require('./routes/notifications');
 
@@ -37,6 +38,11 @@ app.use('/api/submissions', (req, res, next) => {
     console.log('API Request: /api/submissions');
     next();
 }, submissionRoutes);
+
+app.use('/api/feed', (req, res, next) => {
+    console.log('API Request: /api/feed');
+    next();
+}, feedRoutes);
 
 app.use('/api/interactions', (req, res, next) => {
     console.log('API Request: /api/interactions');

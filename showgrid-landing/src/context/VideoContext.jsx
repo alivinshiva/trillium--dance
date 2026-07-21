@@ -33,23 +33,20 @@ export const VideoProvider = ({ children }) => {
         fetchChallenges();
     }, []);
 
-    // Fetch Submissions
-    useEffect(() => {
-        const fetchVideos = async () => {
-            try {
-                const res = await fetch(`${API_URL}/submissions`);
-                if (!res.ok) throw new Error('Failed to fetch submissions');
-                const data = await res.json();
-                setVideos(data);
-            } catch (err) {
-                console.error("Error fetching videos:", err);
-            }
-        };
-        fetchVideos();
+    // Fetch Submissions (on mount only - no polling)
+    const fetchVideos = async () => {
+        try {
+            const res = await fetch(`${API_URL}/submissions`);
+            if (!res.ok) throw new Error('Failed to fetch submissions');
+            const data = await res.json();
+            setVideos(data);
+        } catch (err) {
+            console.error("Error fetching videos:", err);
+        }
+    };
 
-        // Polling removed to prevent excessive API calls
-        const interval = setInterval(fetchVideos, 10000);
-        return () => clearInterval(interval);
+    useEffect(() => {
+        fetchVideos();
     }, []);
 
 
@@ -227,6 +224,25 @@ export const VideoProvider = ({ children }) => {
         }
     };
 
+    // Feed-specific fetch (paginated, server-side filtered)
+    const fetchFeed = async ({ page = 1, limit = 10, sort = 'latest', challengeId } = {}) => {
+        try {
+            const params = new URLSearchParams({
+                page: page.toString(),
+                limit: limit.toString(),
+                sort
+            });
+            if (challengeId) params.append('challengeId', challengeId);
+
+            const res = await fetch(`${API_URL}/feed?${params}`);
+            if (!res.ok) throw new Error('Failed to fetch feed');
+            return await res.json();
+        } catch (err) {
+            console.error("Error fetching feed:", err);
+            return { data: [], pagination: { page: 1, limit: 10, total: 0, pages: 0, hasMore: false } };
+        }
+    };
+
     const getApprovedVideos = () => videos.filter(v => v.status === 'approved');
     const getPendingVideos = () => videos.filter(v => v.status === 'pending');
 
@@ -324,6 +340,8 @@ export const VideoProvider = ({ children }) => {
     return (
         <VideoContext.Provider value={{
             videos,
+            fetchVideos,
+            fetchFeed,
             addVideo,
             addComment,
             deleteComment,

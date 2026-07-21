@@ -27,13 +27,10 @@ export const NotificationProvider = ({ children }) => {
         }
     };
 
-    // Initial Fetch & Polling
+    // Initial Fetch only - no polling (use manual refresh or real-time later)
     useEffect(() => {
         if (isSignedIn) {
             fetchNotifications();
-            // Poll every 30 seconds
-            const interval = setInterval(fetchNotifications, 30000);
-            return () => clearInterval(interval);
         } else {
             setNotifications([]);
             setUnreadCount(0);

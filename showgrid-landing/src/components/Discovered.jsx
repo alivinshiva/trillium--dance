@@ -8,7 +8,7 @@ import Navbar from './Navbar';
 
 
 const Discovered = () => {
-    const { getApprovedVideos, getPresets, addComment, deleteComment, likeVideo, rateVideo, shareVideo, getVideoStats, getPublicVideoUrl, nativeShare } = useVideo();
+    const { fetchFeed, getPresets, addComment, deleteComment, likeVideo, rateVideo, shareVideo, getVideoStats, getPublicVideoUrl, nativeShare } = useVideo();
     const { initialVideoId } = useParams();
     const { user } = useUser();
     const { openSignIn } = useClerk();
@@ -16,6 +16,10 @@ const Discovered = () => {
     // Main State
     const [videos, setVideos] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [feedPage, setFeedPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [feedLoading, setFeedLoading] = useState(false);
+    const [feedSort, setFeedSort] = useState('latest');
     const [isPlaying, setIsPlaying] = useState(true);
     const [progress, setProgress] = useState(0);
     const videoRef = React.useRef(null);
@@ -158,14 +162,36 @@ const Discovered = () => {
 
     const navigate = useNavigate();
 
+    // Initial feed load
     useEffect(() => {
-        const approvedVideos = getApprovedVideos();
-        setVideos(approvedVideos);
-        if (initialVideoId && approvedVideos.length > 0) {
-            const index = approvedVideos.findIndex(v => v._id === initialVideoId);
-            if (index !== -1) setCurrentIndex(index);
-        }
-    }, [getApprovedVideos, initialVideoId]);
+        const loadInitialFeed = async () => {
+            setFeedLoading(true);
+            const result = await fetchFeed({ page: 1, limit: 10, sort: feedSort });
+            setVideos(result.data);
+            setHasMore(result.pagination.hasMore);
+            setFeedPage(1);
+
+            // Find initial video if provided via URL
+            if (initialVideoId && result.data.length > 0) {
+                const index = result.data.findIndex(v => v._id === initialVideoId);
+                if (index !== -1) setCurrentIndex(index);
+            }
+            setFeedLoading(false);
+        };
+        loadInitialFeed();
+    }, [initialVideoId, feedSort]);
+
+    // Load more videos (infinite scroll)
+    const loadMore = async () => {
+        if (feedLoading || !hasMore) return;
+        setFeedLoading(true);
+        const nextPage = feedPage + 1;
+        const result = await fetchFeed({ page: nextPage, limit: 10, sort: feedSort });
+        setVideos(prev => [...prev, ...result.data]);
+        setFeedPage(nextPage);
+        setHasMore(result.pagination.hasMore);
+        setFeedLoading(false);
+    };
 
     // Update URL when current video changes
     useEffect(() => {
@@ -176,7 +202,13 @@ const Discovered = () => {
 
     const handleNext = () => {
         if (!user) return openSignIn();
-        if (currentIndex < videos.length - 1) setCurrentIndex(prev => prev + 1);
+        if (currentIndex < videos.length - 1) {
+            setCurrentIndex(prev => prev + 1);
+            // Load more when near the end (within 3 videos of the end)
+            if (currentIndex >= videos.length - 3 && hasMore && !feedLoading) {
+                loadMore();
+            }
+        }
     };
     const handlePrev = () => {
         if (!user) return openSignIn();
@@ -318,11 +350,44 @@ const Discovered = () => {
                     <Link to="/challenges" className="p-2 text-white/40 hover:text-white transition-colors"><Trophy size={24} /></Link>
                     <Link to="/leaderboard" className="p-2 text-white/40 hover:text-white transition-colors"><BarChart2 size={24} /></Link>
                     <Link to="/profile" className="p-2 text-white/40 hover:text-white transition-colors"><User size={24} /></Link>
+                    {/* Feed Sort Tabs */}
+                    <div className="mt-auto flex flex-col gap-2">
+                        <button
+                            onClick={() => setFeedSort('latest')}
+                            className={`p-2 rounded-lg text-[10px] font-bold transition-colors ${feedSort === 'latest' ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white'}`}
+                        >
+                            Latest
+                        </button>
+                        <button
+                            onClick={() => setFeedSort('top_rated')}
+                            className={`p-2 rounded-lg text-[10px] font-bold transition-colors ${feedSort === 'top_rated' ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white'}`}
+                        >
+                            Top
+                        </button>
+                    </div>
                 </div>
             )}
 
             {/* Main Content Area */}
             <div className="flex-grow relative flex justify-center bg-black">
+                {/* Mobile Sort Tabs (Top) */}
+                {isMobile && (
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex gap-1 bg-black/60 backdrop-blur-md rounded-full p-1 border border-white/10">
+                        <button
+                            onClick={() => setFeedSort('latest')}
+                            className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-colors ${feedSort === 'latest' ? 'bg-white/20 text-white' : 'text-white/60'}`}
+                        >
+                            Latest
+                        </button>
+                        <button
+                            onClick={() => setFeedSort('top_rated')}
+                            className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-colors ${feedSort === 'top_rated' ? 'bg-white/20 text-white' : 'text-white/60'}`}
+                        >
+                            Top
+                        </button>
+                    </div>
+                )}
+
                 {/* Desktop Overlays */}
                 {!isMobile && (
                     <>
@@ -501,6 +566,24 @@ const Discovered = () => {
                             style={{ width: `${progress}%` }}
                         />
                     </div>
+
+                    {/* Loading More Indicator */}
+                    {feedLoading && (
+                        <div className={`absolute inset-x-0 z-30 flex justify-center ${isMobile ? 'bottom-[60px]' : 'bottom-4'}`}>
+                            <div className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+                                <span className="text-xs font-bold text-white/80">Loading more...</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* End of Feed Indicator */}
+                    {!hasMore && videos.length > 0 && currentIndex === videos.length - 1 && (
+                        <div className={`absolute inset-x-0 z-30 flex justify-center ${isMobile ? 'bottom-[60px]' : 'bottom-4'}`}>
+                            <div className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+                                <span className="text-xs font-bold text-white/60">You've reached the end</span>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Mobile Controls Overlay */}
                     {isMobile && (
