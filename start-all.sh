@@ -11,6 +11,9 @@ cleanup() {
 # Trap SIGINT (Ctrl+C) and SIGTERM
 trap cleanup SIGINT SIGTERM
 
+# Unset proxy for localhost
+unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+
 echo "🚀 Starting all ShowGrid servers..."
 
 # Start Admin Frontend
