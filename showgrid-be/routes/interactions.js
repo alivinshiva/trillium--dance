@@ -11,6 +11,7 @@ const {
 } = require('../models/Interaction');
 const Submission = require('../models/Submission');
 const { requireAuth } = require('../utils/auth');
+const { rateLimit } = require('../utils/rateLimit');
 
 // --- Helper to update Aggregates ---
 const updateAggregate = async (videoId, field, amount) => {
@@ -63,7 +64,7 @@ router.get('/video/:videoId', async (req, res) => {
 });
 
 // POST Like / Unlike (Toggle)
-router.post('/like', requireAuth, async (req, res) => {
+router.post('/like', requireAuth, rateLimit, async (req, res) => {
     try {
         const { videoId, userId } = req.body;
 
@@ -86,7 +87,7 @@ router.post('/like', requireAuth, async (req, res) => {
 });
 
 // POST Rate
-router.post('/rate', requireAuth, async (req, res) => {
+router.post('/rate', requireAuth, rateLimit, async (req, res) => {
     try {
         const { videoId, userId, rating } = req.body;
         const numericRating = parseInt(rating);
@@ -147,7 +148,7 @@ router.post('/rate', requireAuth, async (req, res) => {
 });
 
 // POST Comment
-router.post('/comment', requireAuth, async (req, res) => {
+router.post('/comment', requireAuth, rateLimit, async (req, res) => {
     try {
         const { videoId, userId, userName, userAvatar, body, parentId } = req.body;
 
@@ -191,7 +192,7 @@ router.get('/comments/:videoId', async (req, res) => {
 });
 
 // POST Share
-router.post('/share', requireAuth, async (req, res) => {
+router.post('/share', requireAuth, rateLimit, async (req, res) => {
     try {
         const { videoId, userId, targetType } = req.body;
 

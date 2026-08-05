@@ -36,7 +36,10 @@ Aggregation pipeline: `$lookup` ratingStats → `$addFields` `averageRating/rati
 
 ### `showgrid-be/server.js` — starts `startFeedScoreWorker()` after Mongo connects.
 
+### `showgrid-be/utils/rateLimit.js` — in-memory interaction rate limiter (120 actions/hr/user, 429 on exceed). Applied to like/rate/comment/share in `routes/interactions.js`. Env: `INTERACTION_RATE_LIMIT`. Single-instance only — swap for Redis when running 2+ API instances.
+
 ### `showgrid-landing/src/context/VideoContext.jsx` — `fetchFeed` appends `viewerId: user.id`.
+### `showgrid-landing/src/components/Discovered.jsx` — sort tabs: Latest | Top | Trending.
 
 ---
 
@@ -111,6 +114,7 @@ activeRaters = count of distinct users who have ever rated
 | Studio baseline window | 30 days | `BASELINE_WINDOW_MS`, `workers/feedScores.js:13` |
 | Recompute interval | 10 min | `RECOMPUTE_INTERVAL_MS`, `workers/feedScores.js:10` |
 | Boot backfill staleness | 15 min | `STALE_AFTER_MS`, `workers/feedScores.js:11` |
+| Interaction rate limit | 120 actions/hr/user | `INTERACTION_RATE_LIMIT` env, or `utils/rateLimit.js:5` |
 | Trending assembly window | `limit × 3` | `routes/feed.js:143` |
 
 ---

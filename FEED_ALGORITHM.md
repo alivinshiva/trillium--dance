@@ -378,7 +378,7 @@ Sub-challenge cards are a **generated item type** in Feed Assembly — the serve
 
 ### Phase C: hardening
 - [~] **9. Feed assembly:** **freshness floor + studio cap implemented** in `assembleFeed()` (window-fetch, in-memory, no per-viewer cache). **Challenge rotation NOT implemented** — deferred.
-- [ ] **11. Rate limiting** on interactions (like/rate/comment/share).
+- [x] **11. Rate limiting** on interactions — `utils/rateLimit.js` (120 actions/hr/user, env `INTERACTION_RATE_LIMIT`, in-memory, 429 on exceed), applied to like/rate/comment/share.
 - [ ] **12. (Future) User model + trust-weighted votes.**
 
 ### Scale triggers (defer all until needed)
