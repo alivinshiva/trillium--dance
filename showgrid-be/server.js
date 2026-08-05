@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const { ClerkExpressWithAuth } = require('./utils/auth');
+const { startFeedScoreWorker } = require('./workers/feedScores');
 
 const app = express();
 const PORT = process.env.PORT;
@@ -19,7 +20,10 @@ app.use(ClerkExpressWithAuth());
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('MongoDB Connected (ShowGrid User Backend)'))
+    .then(() => {
+        console.log('MongoDB Connected (ShowGrid User Backend)');
+        startFeedScoreWorker();
+    })
     .catch(err => console.error('MongoDB Connection Error:', err));
 
 // Routes

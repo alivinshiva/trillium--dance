@@ -233,6 +233,7 @@ export const VideoProvider = ({ children }) => {
                 sort
             });
             if (challengeId) params.append('challengeId', challengeId);
+            if (user) params.append('viewerId', user.id);
 
             const res = await fetch(`${API_URL}/feed?${params}`);
             if (!res.ok) throw new Error('Failed to fetch feed');

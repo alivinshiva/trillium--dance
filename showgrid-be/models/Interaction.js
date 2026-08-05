@@ -50,6 +50,15 @@ const videoRatingSchema = new mongoose.Schema({
 });
 videoRatingSchema.index({ videoId: 1, userId: 1 }, { unique: true });
 
+// Video Views (feed serves - powers re-show cap & cooldown)
+const videoViewSchema = new mongoose.Schema({
+    videoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Submission', required: true },
+    userId: { type: String, required: true },
+    seenAt: { type: Date, default: Date.now }
+});
+videoViewSchema.index({ userId: 1, videoId: 1 });
+videoViewSchema.index({ userId: 1, seenAt: -1 });
+
 // --- Aggregates (Denormalized Counts) ---
 
 // General Video Aggregates (Likes, Comments, Shares)
@@ -58,6 +67,7 @@ const videoAggregateSchema = new mongoose.Schema({
     likes: { type: Number, default: 0 },
     comments: { type: Number, default: 0 },
     shares: { type: Number, default: 0 },
+    impressions: { type: Number, default: 0 }, // Feed serves (YouTube model, serve-counted)
     updatedAt: { type: Date, default: Date.now }
 });
 
@@ -76,6 +86,7 @@ module.exports = {
     VideoComment: mongoose.model('VideoComment', videoCommentSchema),
     VideoShare: mongoose.model('VideoShare', videoShareSchema),
     VideoRating: mongoose.model('VideoRating', videoRatingSchema),
+    VideoView: mongoose.model('VideoView', videoViewSchema),
     VideoAggregate: mongoose.model('VideoAggregate', videoAggregateSchema),
     VideoRatingAggregate: mongoose.model('VideoRatingAggregate', videoRatingAggregateSchema)
 };

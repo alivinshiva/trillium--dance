@@ -44,6 +44,18 @@ const submissionSchema = new mongoose.Schema({
         enum: ['pending', 'approved', 'rejected'],
         default: 'pending'
     },
+    feedScore: {
+        type: Number,
+        default: 0
+    },
+    wilsonScore: {
+        type: Number,
+        default: 0
+    },
+    feedScoreUpdatedAt: {
+        type: Date,
+        default: null
+    },
     judgeTags: {
         type: [String],
         default: []
@@ -65,5 +77,8 @@ const submissionSchema = new mongoose.Schema({
         default: Date.now
     }
 });
+
+submissionSchema.index({ feedScore: -1, createdAt: -1 });
+submissionSchema.index({ wilsonScore: -1, createdAt: -1 });
 
 module.exports = mongoose.model('Submission', submissionSchema);

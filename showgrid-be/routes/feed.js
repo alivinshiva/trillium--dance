@@ -2,6 +2,108 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const Submission = require('../models/Submission');
+const {
+    VideoRating,
+    VideoView,
+    VideoAggregate
+} = require('../models/Interaction');
+
+// Re-show policy (Publisher Boost) - tunable via env
+const RE_SHOW_CAP = parseInt(process.env.RE_SHOW_CAP) || 3;
+const RE_SHOW_COOLDOWN_MS = (parseInt(process.env.RE_SHOW_COOLDOWN_HOURS) || 24) * 60 * 60 * 1000;
+
+// Trending assembly
+const FRESH_WINDOW_MS = 48 * 60 * 60 * 1000;
+const STUDIO_CAP = 2;
+
+// Videos this viewer must not see: rated (Requirement 1) or past re-show limits (Re-Show Policy)
+const buildViewerExclusions = async (viewerId) => {
+    const cooldownCutoff = new Date(Date.now() - RE_SHOW_COOLDOWN_MS);
+
+    const [rated, viewStats] = await Promise.all([
+        VideoRating.find({ userId: viewerId }).select('videoId').lean(),
+        VideoView.aggregate([
+            { $match: { userId: viewerId } },
+            {
+                $group: {
+                    _id: '$videoId',
+                    count: { $sum: 1 },
+                    lastSeen: { $max: '$seenAt' }
+                }
+            },
+            {
+                $match: {
+                    $or: [
+                        { count: { $gte: RE_SHOW_CAP } },
+                        { lastSeen: { $gte: cooldownCutoff } }
+                    ]
+                }
+            }
+        ])
+    ]);
+
+    const excluded = new Set(rated.map(r => r.videoId.toString()));
+    for (const v of viewStats) {
+        excluded.add(v._id.toString());
+    }
+
+    return [...excluded];
+};
+
+// Record a serve: 1 impression per serve (YouTube model) + a VideoView for the viewer
+const recordServe = async (submissions, viewerId) => {
+    if (!submissions.length) return;
+    const now = new Date();
+
+    await VideoAggregate.bulkWrite(submissions.map(sub => ({
+        updateOne: {
+            filter: { _id: sub._id },
+            update: { $inc: { impressions: 1 }, $set: { updatedAt: now } },
+            upsert: true
+        }
+    })));
+
+    if (viewerId) {
+        await VideoView.insertMany(submissions.map(sub => ({
+            videoId: sub._id,
+            userId: viewerId,
+            seenAt: now
+        })));
+    }
+};
+
+// Assemble a trending page: freshness floor + studio cap (deterministic within a worker window)
+const assembleFeed = (windowSubs, freshSubs, limitNum) => {
+    const assembled = [];
+    const studioCounts = new Map();
+    const seen = new Set();
+
+    const tryAdd = (sub) => {
+        const key = sub._id.toString();
+        if (seen.has(key)) return false;
+        const studioKey = sub.studioName || sub.userId;
+        const count = studioCounts.get(studioKey) || 0;
+        if (count >= STUDIO_CAP) return false;
+        seen.add(key);
+        studioCounts.set(studioKey, count + 1);
+        assembled.push(sub);
+        return true;
+    };
+
+    const freshFloorCount = Math.max(1, Math.ceil(limitNum * 0.25));
+    let freshAdded = 0;
+    for (const sub of freshSubs) {
+        if (freshAdded >= freshFloorCount) break;
+        if (tryAdd(sub)) freshAdded++;
+    }
+
+    for (const sub of windowSubs) {
+        if (assembled.length >= limitNum * 2) break;
+        tryAdd(sub);
+    }
+
+    return assembled;
+};
 
 // GET /api/feed - Paginated, filtered, sorted feed of approved submissions
 router.get('/', async (req, res) => {
@@ -11,7 +113,8 @@ router.get('/', async (req, res) => {
             limit = 10,
             sort = 'latest',
             challengeId,
-            userId
+            userId,
+            viewerId
         } = req.query;
 
         const pageNum = Math.max(1, parseInt(page));
@@ -27,15 +130,60 @@ router.get('/', async (req, res) => {
             filter.userId = userId;
         }
 
+        // Per-viewer exclusions: rated + past re-show limits
+        if (viewerId) {
+            const excluded = await buildViewerExclusions(viewerId);
+            if (excluded.length) {
+                filter._id = { $nin: excluded };
+            }
+        }
+
+        // Trending: score-ranked window + assembly (freshness floor + studio cap)
+        if (sort === 'trending' && !userId) {
+            const windowLimit = limitNum * 3;
+            const freshSince = new Date(Date.now() - FRESH_WINDOW_MS);
+
+            const [windowSubs, freshSubs] = await Promise.all([
+                Submission.find(filter)
+                    .sort({ feedScore: -1, createdAt: -1 })
+                    .limit(windowLimit)
+                    .populate('challengeId')
+                    .lean(),
+                Submission.find({ ...filter, createdAt: { $gte: freshSince } })
+                    .sort({ createdAt: -1 })
+                    .limit(limitNum)
+                    .populate('challengeId')
+                    .lean()
+            ]);
+
+            const assembled = assembleFeed(windowSubs, freshSubs, limitNum);
+            const page = assembled.slice(skip, skip + limitNum);
+
+            await recordServe(page, viewerId);
+
+            return res.json({
+                data: page,
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                    total: assembled.length,
+                    pages: Math.ceil(assembled.length / limitNum),
+                    hasMore: skip + limitNum < assembled.length
+                }
+            });
+        }
+
         // Build sort
         let sortQuery = {};
         switch (sort) {
-            case 'top_rated':
-                // Will be enhanced with feedScore in Step 5
-                sortQuery = { createdAt: -1 }; // fallback for now
-                break;
             case 'oldest':
                 sortQuery = { createdAt: 1 };
+                break;
+            case 'top_rated':
+                sortQuery = { wilsonScore: -1, createdAt: -1 };
+                break;
+            case 'trending':
+                sortQuery = { feedScore: -1, createdAt: -1 };
                 break;
             case 'latest':
             default:
@@ -52,6 +200,9 @@ router.get('/', async (req, res) => {
                 .lean(),
             Submission.countDocuments(filter)
         ]);
+
+        // Record serves (impressions + viewer history)
+        await recordServe(submissions, viewerId);
 
         res.json({
             data: submissions,

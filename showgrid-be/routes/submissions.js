@@ -47,20 +47,27 @@ router.get('/leaderboard', async (req, res) => {
         pipeline.push({
             $addFields: {
                 averageRating: { $ifNull: ['$ratingStats.average', 0] },
-                ratingCount: { $ifNull: ['$ratingStats.count', 0] }
+                ratingCount: { $ifNull: ['$ratingStats.count', 0] },
+                wilsonScore: { $ifNull: ['$wilsonScore', 0] }
             }
         });
 
-        // 5. Sort
+        // 5. Keep only videos that cleared the minRatings gate (wilsonScore > 0)
+        pipeline.push({
+            $match: { wilsonScore: { $gt: 0 } }
+        });
+
+        // 6. Sort
         pipeline.push({
             $sort: {
+                wilsonScore: -1,
                 averageRating: -1,
                 ratingCount: -1,
                 createdAt: -1
             }
         });
 
-        // 6. Limit
+        // 7. Limit
         pipeline.push({ $limit: limit });
 
         const leaderboard = await Submission.aggregate(pipeline);
