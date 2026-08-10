@@ -10,6 +10,7 @@ const {
     VideoRatingAggregate
 } = require('../models/Interaction');
 const Submission = require('../models/Submission');
+const User = require('../models/User');
 const { requireAuth } = require('../utils/auth');
 const { rateLimit } = require('../utils/rateLimit');
 
@@ -121,6 +122,13 @@ router.post('/rate', requireAuth, rateLimit, async (req, res) => {
         } else {
             // Create New
             await VideoRating.create({ videoId, userId, rating: numericRating });
+
+            // Ensure a User doc exists so the trust worker can score this rater
+            await User.updateOne(
+                { _id: userId },
+                { $setOnInsert: { createdAt: now } },
+                { upsert: true }
+            );
 
             // Update Aggregate (Count + Sum)
             await VideoRatingAggregate.updateOne(

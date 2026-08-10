@@ -36,13 +36,17 @@ const computeEngagementEff = ({ likes = 0, comments = 0, shares = 0, impressions
 };
 
 // Full trending score (feedScore) + leaderboard score (wilsonScore).
-function computeScore({ likes, comments, shares, impressions, ratingCount, ratingAverage, createdAt, studioBaseline = 0 }) {
+// ratingCount/ratingAverage (raw) gate eligibility & display; weightedCount/weightedAverage
+// (trust-weighted) feed the wilson score so low-trust votes can't inflate ranking.
+function computeScore({ likes, comments, shares, impressions, ratingCount, ratingAverage, weightedCount, weightedAverage, createdAt, studioBaseline = 0 }) {
     const ageHours = (Date.now() - new Date(createdAt).getTime()) / 3600000;
     const eff = computeEngagementEff({ likes, comments, shares, impressions });
     const exposureTrust = log1p(Math.max(impressions, 1));
     const decay = recencyDecay(Math.max(ageHours, 0));
     const boost = studioBaseline > 0 ? 1 + log1p(eff / studioBaseline) : 1;
-    const wilsonScore = wilson(ratingCount, ratingAverage);
+    const wCount = weightedCount ?? ratingCount;
+    const wAvg = weightedAverage ?? ratingAverage;
+    const wilsonScore = wilson(wCount, wAvg);
     const score = wilsonScore * eff * exposureTrust * decay * boost;
     return { score, wilsonScore, engagementEff: eff };
 }

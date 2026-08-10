@@ -168,7 +168,7 @@ The old draft's `engagement / hours_since_creation` was the real offender (rewar
 
 Optional stricter rule (not recommended for v1): within a single challenge, base decay on **challenge start** rather than upload time, so all challengers share an identical elapsed window. Skip unless a specific challenge shows an abuse pattern.
 
-### Trust-weighted votes (future phase)
+### Trust-weighted votes (implemented)
 
 Wilson assumes ratings are honest. The next tier of defense (Google's `Leas` / lockstep detection, at your scale a simple version) weights each rating by rater trust:
 
@@ -176,8 +176,12 @@ Wilson assumes ratings are honest. The next tier of defense (Google's `Leas` / l
 trust(user) = f(accountAge, interactionCount, agreementWithConsensus)
 ```
 
-- A brand-new account's rating counts ~0; a long-history rater whose votes match the community consensus counts ~1.
-- **Prerequisite:** there is currently **no backend User model** — `userId` is just a string (`Submission.js:4`). We must add one (or a `UserTrust` collection) before trust-weighting is possible. Flagged as a separate step.
+- A brand-new account's rating counts ~0.2; a long-history rater whose votes match the community consensus counts ~1.0.
+- **Weighted aggregation:** `weightedCount = Σ trust(user)`, `weightedAverage = Σ (rating · trust) / weightedCount` — these replace the raw count/average inside `wilson()` only. The **raw** rating count still gates eligibility (a ring still enters trending, but at floor score, where it can't rank).
+- **Agreement** = fraction of the user's ratings within ±1 of each video's average (crowd consensus), computed in the worker via `$lookup` on `VideoRatingAggregate`.
+- **Account age** is proxied by the user's first rating `createdAt` when the `User` doc was created by upsert (`models/User.js`, `routes/interactions.js` on `/rate`). The 10-min worker (`syncUserTrust`) backfills and refreshes all raters every cycle.
+- **Rate-limit hits persist** to `User.lastRateLimitedAt` (fire-and-forget from `utils/rateLimit.js`) — a future flag for lockstep detection. Currently informational only; `trust.flags` is reserved for it.
+- Verified: 20 × trust-0.2 five-stars → `weightedCount=4` → wilson 3.04, vs 20 real votes → 4.36. Even 40 ring votes (weightedCount=8) still rank below 20 real votes (3.70 < 4.36).
 
 ### Exposure fairness (protects the ecosystem, not just scores)
 
@@ -379,7 +383,7 @@ Sub-challenge cards are a **generated item type** in Feed Assembly — the serve
 ### Phase C: hardening
 - [~] **9. Feed assembly:** **freshness floor + studio cap implemented** in `assembleFeed()` (window-fetch, in-memory, no per-viewer cache). **Challenge rotation NOT implemented** — deferred.
 - [x] **11. Rate limiting** on interactions — `utils/rateLimit.js` (120 actions/hr/user, env `INTERACTION_RATE_LIMIT`, in-memory, 429 on exceed), applied to like/rate/comment/share.
-- [ ] **12. (Future) User model + trust-weighted votes.**
+- [x] **12. User model + trust-weighted votes** — `models/User.js`, `utils/trust.js` (`computeTrust`), worker `syncUserTrust` + weighted aggregation feeding `wilson()`; rate upsert on `/rate`; rate-limit hits persisted as a reserved flag.
 
 ### Scale triggers (defer all until needed)
 - Feed query consistently > 100 ms → add global top-pool in-memory cache.

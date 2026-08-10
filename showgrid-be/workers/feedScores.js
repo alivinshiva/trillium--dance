@@ -3,6 +3,7 @@
 // so it can be extracted to a separate process later without code changes.
 
 const Submission = require('../models/Submission');
+const User = require('../models/User');
 const {
     VideoAggregate,
     VideoRatingAggregate,
@@ -13,10 +14,109 @@ const {
     computeEngagementEff,
     dynamicMinRatings
 } = require('../utils/feedScore');
+const { computeTrust, TRUST_FLOOR } = require('../utils/trust');
 
 const RECOMPUTE_INTERVAL_MS = 10 * 60 * 1000;
 const STALE_AFTER_MS = 15 * 60 * 1000;
 const BASELINE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const AGREEMENT_WINDOW = 1; // rating within ±1 of video average counts as agreeing
+
+// Trust per rater: account age (proxied by first rating if unknown), rating history,
+// and agreement with the crowd consensus. Upserts User docs so new/historical raters
+// always have a trust score before weighted aggregation.
+const syncUserTrust = async () => {
+    const now = Date.now();
+
+    const userGroups = await VideoRating.aggregate([
+        {
+            $lookup: {
+                from: 'videoratingaggregates',
+                localField: 'videoId',
+                foreignField: '_id',
+                as: 'agg'
+            }
+        },
+        { $addFields: { avg: { $ifNull: [{ $first: '$agg.average' }, 3] } } },
+        {
+            $group: {
+                _id: '$userId',
+                ratingCount: { $sum: 1 },
+                firstRatingAt: { $min: '$createdAt' },
+                agreements: {
+                    $sum: {
+                        $cond: [
+                            { $lte: [{ $abs: { $subtract: ['$rating', '$avg'] } }, AGREEMENT_WINDOW] },
+                            1,
+                            0
+                        ]
+                    }
+                }
+            }
+        }
+    ]);
+
+    const upserts = [];
+    const updates = [];
+    for (const g of userGroups) {
+        upserts.push({
+            updateOne: {
+                filter: { _id: g._id },
+                update: { $setOnInsert: { createdAt: g.firstRatingAt } },
+                upsert: true
+            }
+        });
+        const agreement = g.ratingCount ? g.agreements / g.ratingCount : 0.5;
+        const accountAgeDays = (now - new Date(g.firstRatingAt).getTime()) / (24 * 60 * 60 * 1000);
+        const trust = computeTrust({ accountAgeDays, ratingCount: g.ratingCount, agreement });
+        updates.push({
+            updateOne: {
+                filter: { _id: g._id },
+                update: {
+                    $set: {
+                        trust,
+                        'stats.ratingCount': g.ratingCount,
+                        updatedAt: new Date()
+                    }
+                }
+            }
+        });
+    }
+
+    if (upserts.length) await User.bulkWrite(upserts, { ordered: false });
+    if (updates.length) await User.bulkWrite(updates, { ordered: false });
+    console.log(`[feed-scores] trust synced for ${updates.length} raters`);
+};
+
+// Trust-weighted rating stats per video: each vote counts its rater's trust score.
+// A 5-star ring of 20 low-trust accounts counts as ~4 weighted votes, not 20.
+const getWeightedRatings = async () => {
+    const groups = await VideoRating.aggregate([
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'userId',
+                foreignField: '_id',
+                as: 'u'
+            }
+        },
+        { $addFields: { trust: { $ifNull: [{ $first: '$u.trust.score' }, TRUST_FLOOR] } } },
+        {
+            $group: {
+                _id: '$videoId',
+                weightedCount: { $sum: '$trust' },
+                weightedSum: { $sum: { $multiply: ['$rating', '$trust'] } }
+            }
+        }
+    ]);
+    const map = new Map();
+    for (const g of groups) {
+        map.set(g._id.toString(), {
+            weightedCount: g.weightedCount,
+            weightedAverage: g.weightedCount > 0 ? g.weightedSum / g.weightedCount : 0
+        });
+    }
+    return map;
+};
 
 const computeAllScores = async () => {
     const submissions = await Submission.find({ status: 'approved' })
@@ -27,6 +127,9 @@ const computeAllScores = async () => {
         console.log('[feed-scores] no approved submissions to score');
         return;
     }
+
+    await syncUserTrust();
+    const weightedMap = await getWeightedRatings();
 
     const ids = submissions.map(s => s._id);
     const [aggs, ratingAggs] = await Promise.all([
@@ -83,8 +186,9 @@ const computeAllScores = async () => {
         const rAgg = ratingMap.get(s._id.toString());
         const ratingCount = rAgg?.count || 0;
         const ratingAverage = rAgg?.average || 0;
+        const weighted = weightedMap.get(s._id.toString()) || { weightedCount: 0, weightedAverage: 0 };
 
-        const isEligible = ratingCount >= minRatings;
+        const isEligible = ratingCount >= minRatings; // raw vote count still gates entry
         const baseline = studioBaseline.get(s.studioName || s.userId) || globalBaseline;
 
         const { score, wilsonScore } = computeScore({
@@ -94,6 +198,8 @@ const computeAllScores = async () => {
             impressions: agg?.impressions || 0,
             ratingCount,
             ratingAverage,
+            weightedCount: weighted.weightedCount,
+            weightedAverage: weighted.weightedAverage,
             createdAt: s.createdAt,
             studioBaseline: baseline
         });

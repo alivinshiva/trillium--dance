@@ -16,7 +16,9 @@ Reference for the implemented feed algorithm — what each file does, the exact 
 | `computeScore({...})` | Full `feedScore` + `wilsonScore` for one submission. Returns `{ score, wilsonScore, engagementEff }`. |
 
 ### `showgrid-be/workers/feedScores.js` — the recompute worker
-- `computeAllScores()` — one full pass: reads approved submissions + `VideoAggregate` + `VideoRatingAggregate`, computes studio baselines, applies the minRatings gate, writes `feedScore`/`wilsonScore`/`feedScoreUpdatedAt` via `bulkWrite`.
+- `syncUserTrust()` — refreshes `User.trust` for every rater (account age proxied by first rating, rating history, agreement with crowd consensus) and upserts missing `User` docs. Runs once per pass.
+- `getWeightedRatings()` — `weightedCount = Σ trust`, `weightedAverage = Σ(rating·trust)/weightedCount` per video (a 20-account 5★ ring counts as ~4 weighted votes, not 20).
+- `computeAllScores()` — one full pass: reads approved submissions + `VideoAggregate` + `VideoRatingAggregate`, syncs trust, computes weighted ratings + studio baselines, applies the minRatings gate (raw count), writes `feedScore`/`wilsonScore`/`feedScoreUpdatedAt` via `bulkWrite`.
 - `startFeedScoreWorker()` — boot backfill (if scores stale > 15 min) + `setInterval` every 10 min. Started from `server.js`. Decoupled so it can be extracted to a separate process later.
 
 ### `showgrid-be/routes/feed.js` — the feed endpoint (`GET /api/feed`)
@@ -33,10 +35,14 @@ Aggregation pipeline: `$lookup` ratingStats → `$addFields` `averageRating/rati
 ### Schema additions
 - `showgrid-be/models/Submission.js` — fields `feedScore`, `wilsonScore`, `feedScoreUpdatedAt`; indexes `{ feedScore: -1, createdAt: -1 }`, `{ wilsonScore: -1, createdAt: -1 }`.
 - `showgrid-be/models/Interaction.js` — `VideoView { videoId, userId, seenAt }` (indexes on `{ userId, videoId }` and `{ userId, seenAt: -1 }`); `VideoAggregate.impressions`.
+- `showgrid-be/models/User.js` — `_id` = Clerk userId; `trust { score, accountAge, history, agreement, flags }`; `stats.*`; `lastRateLimitedAt`. Index on `trust.score`. Upserted on `/rate` (`routes/interactions.js`) and by `syncUserTrust`.
+
+### `showgrid-be/utils/trust.js` — pure trust math (no DB access)
+`computeTrust({ accountAgeDays, ratingCount, agreement })` → `{ score, accountAge, history, agreement }`. Weights: age 0.35, history 0.35, agreement 0.3; floor `TRUST_FLOOR` (0.2). Constants: `AGE_FULL_DAYS` 30, `HISTORY_FULL` 20.
 
 ### `showgrid-be/server.js` — starts `startFeedScoreWorker()` after Mongo connects.
 
-### `showgrid-be/utils/rateLimit.js` — in-memory interaction rate limiter (120 actions/hr/user, 429 on exceed). Applied to like/rate/comment/share in `routes/interactions.js`. Env: `INTERACTION_RATE_LIMIT`. Single-instance only — swap for Redis when running 2+ API instances.
+### `showgrid-be/utils/rateLimit.js` — in-memory interaction rate limiter (120 actions/hr/user, 429 on exceed). Applied to like/rate/comment/share in `routes/interactions.js`. On 429 it fire-and-forgets `User.lastRateLimitedAt` (reserved trust flag). Env: `INTERACTION_RATE_LIMIT`. Single-instance only — swap for Redis when running 2+ API instances.
 
 ### `showgrid-landing/src/context/VideoContext.jsx` — `fetchFeed` appends `viewerId: user.id`.
 ### `showgrid-landing/src/components/Discovered.jsx` — sort tabs: Latest | Top | Trending.
@@ -64,6 +70,22 @@ lower  = (center − margin) / denom
 wilson = 1 + clamp(lower, 0, 1) · 4          // map back to 1..5
 ```
 Few ratings → wide interval → low lower bound → can't top the chart on fake votes.
+
+### Rater trust (weighted votes)
+```
+accountAge   = clamp01(accountAgeDays / 30)          // proxied by first rating if User doc was upserted
+history      = clamp01(ratingCount / 20)
+agreement    = clamp01(#ratings within ±1 of video avg / ratingCount)
+trust        = clamp01(0.35·accountAge + 0.35·history + 0.3·agreement), floored at 0.2
+```
+
+### Trust-weighted Wilson (wilsonScore & wilson term of feedScore)
+```
+weightedCount   = Σ trust(user) over all ratings
+weightedAverage = Σ (rating · trust) / weightedCount
+wilson          = wilson(weightedCount, weightedAverage)     // same formula as above
+```
+Raw `ratingCount` still gates eligibility and feeds display stats; only the wilson term is weighted. Verified: 20 × trust-0.2 5★ votes → `weightedCount=4` → wilson 3.04, below 20 real votes → 4.36; even 40 ring votes (3.70) lose to 20 real ones.
 
 ### Recency decay
 ```
@@ -115,6 +137,11 @@ activeRaters = count of distinct users who have ever rated
 | Recompute interval | 10 min | `RECOMPUTE_INTERVAL_MS`, `workers/feedScores.js:10` |
 | Boot backfill staleness | 15 min | `STALE_AFTER_MS`, `workers/feedScores.js:11` |
 | Interaction rate limit | 120 actions/hr/user | `INTERACTION_RATE_LIMIT` env, or `utils/rateLimit.js:5` |
+| Trust floor | 0.2 | `TRUST_FLOOR`, `utils/trust.js` |
+| Trust age ramp | 30 days to full credit | `AGE_FULL_DAYS`, `utils/trust.js` |
+| Trust history ramp | 20 ratings to full credit | `HISTORY_FULL`, `utils/trust.js` |
+| Trust weights | age .35 / history .35 / agreement .3 | `W_AGE`/`W_HISTORY`/`W_AGREEMENT`, `utils/trust.js` |
+| Agreement window | ±1 star | `AGREEMENT_WINDOW`, `workers/feedScores.js` |
 | Trending assembly window | `limit × 3` | `routes/feed.js:143` |
 
 ---
@@ -131,8 +158,10 @@ activeRaters = count of distinct users who have ever rated
 
 [worker, every 10 min]
    computeAllScores()
+      syncUserTrust: rating groups + agreement -> trust per user (upsert missing User docs)
+      getWeightedRatings: weightedCount/weightedAverage per video
       aggregates -> eff per video -> studio baselines (30d) -> activeRaters
-      -> minRatings gate -> bulkWrite feedScore/wilsonScore/feedScoreUpdatedAt
+      -> minRatings gate (raw count) -> bulkWrite feedScore/wilsonScore/feedScoreUpdatedAt
 
 [leaderboard]
    GET /api/submissions/leaderboard
@@ -149,4 +178,6 @@ activeRaters = count of distinct users who have ever rated
 - **Tighter competition gate:** raise `MIN_RATINGS_CAP` (e.g., 10) — note it slows small-studio entry.
 - **Fresher scores:** lower `RECOMPUTE_INTERVAL_MS` (each run is a full pass; keep ≥ 5 min).
 
-Not implemented yet (see FEED_ALGORITHM.md): challenge rotation, interaction rate-limiting, trust-weighted votes, `VideoView`-based "hide viewed", sub-challenges.
+- **Weaken vote-stuffing further:** lower `TRUST_FLOOR`, raise `HISTORY_FULL` (need more history for full trust), or bump the agreement weight.
+
+Not implemented yet (see FEED_ALGORITHM.md): challenge rotation, `VideoView`-based "hide viewed", sub-challenges.
