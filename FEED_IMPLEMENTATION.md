@@ -26,7 +26,7 @@ Reference for the implemented feed algorithm — what each file does, the exact 
 |-------|---------|
 | `buildViewerExclusions(viewerId)` | Video IDs to hide for a viewer: rated ones + past re-show limits. |
 | `recordServe(submissions, viewerId)` | +1 `impressions` per serve + writes a `VideoView` per viewer. |
-| `assembleFeed(windowSubs, freshSubs, limitNum)` | Freshness floor (25% slots for <48h uploads) + studio cap (2 per studio). |
+| `assembleFeed(windowSubs, freshSubs, limitNum)` | Freshness floor (25% slots for <48h uploads) + studio cap (2 per studio) + **challenge round-robin** (groups by challenge, pops one per pass, so no challenge dominates or sits adjacent to itself). Deterministic within a worker window. |
 | Route | Sorts: `latest` (createdAt), `oldest`, `top_rated` (wilsonScore), `trending` (feedScore + assembly). Trending assembly only applies when no `userId` filter. |
 
 ### `showgrid-be/routes/submissions.js` — leaderboard (the competition verdict)
@@ -143,6 +143,7 @@ activeRaters = count of distinct users who have ever rated
 | Trust weights | age .35 / history .35 / agreement .3 | `W_AGE`/`W_HISTORY`/`W_AGREEMENT`, `utils/trust.js` |
 | Agreement window | ±1 star | `AGREEMENT_WINDOW`, `workers/feedScores.js` |
 | Trending assembly window | `limit × 3` | `routes/feed.js:143` |
+| Challenge rotation | round-robin, 1/pass per challenge | `assembleFeed`, `routes/feed.js:76` |
 
 ---
 
@@ -153,7 +154,7 @@ activeRaters = count of distinct users who have ever rated
    GET /api/feed?viewerId=X&sort=trending
       1. buildViewerExclusions(X)      rated ids + seen≥3 + seen<24h
       2. trending window (feedScore:-1) + fresh pool (<48h)
-      3. assembleFeed: 25% fresh floor, then score-ranked, studio cap 2
+      3. assembleFeed: 25% fresh floor -> challenge round-robin -> studio cap 2
       4. recordServe: impressions+1 per served video, VideoView per viewer
 
 [worker, every 10 min]
@@ -180,4 +181,4 @@ activeRaters = count of distinct users who have ever rated
 
 - **Weaken vote-stuffing further:** lower `TRUST_FLOOR`, raise `HISTORY_FULL` (need more history for full trust), or bump the agreement weight.
 
-Not implemented yet (see FEED_ALGORITHM.md): challenge rotation, `VideoView`-based "hide viewed", sub-challenges.
+Not implemented yet (see FEED_ALGORITHM.md): `VideoView`-based "hide viewed", sub-challenges.

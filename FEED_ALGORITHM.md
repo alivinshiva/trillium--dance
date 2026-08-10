@@ -189,7 +189,7 @@ From the earlier plan (Step 6, challenge rotation) plus research findings:
 
 1. **Freshness floor** — reserve ~25% of feed slots for uploads < 48h old, unconditionally. This is the TikTok "seed audience" principle: new content must get initial exposure regardless of score, or nothing new ever surfaces.
 2. **Studio cap** — max 2 videos from one studio per 20 shown (Step 6 in FEED_PLAN.md).
-3. **Challenge rotation** — interleave by challenge so one challenge can't dominate (planned in FEED_PLAN).
+3. **Challenge rotation (implemented)** — `assembleFeed` groups the trending pool by challenge (fresh-first within each group) and round-robins: one candidate per challenge per pass. The freshest challenge leads; adjacent feed items can't be the same challenge; with C active challenges a single one is naturally bounded to ~1/C of the page. Single-challenge feeds fall back to plain score order.
 
 ### Operational rules (Kaggle / Reddit lessons)
 
@@ -381,7 +381,7 @@ Sub-challenge cards are a **generated item type** in Feed Assembly — the serve
 - [x] **8. `sort=trending`** → indexed `feedScore` sort; `sort=top_rated` → `wilsonScore` sort; **leaderboard** → indexed `wilsonScore` sort (time-independent verdict), `$match wilsonScore > 0` gate.
 
 ### Phase C: hardening
-- [~] **9. Feed assembly:** **freshness floor + studio cap implemented** in `assembleFeed()` (window-fetch, in-memory, no per-viewer cache). **Challenge rotation NOT implemented** — deferred.
+- [x] **9. Feed assembly:** **freshness floor + studio cap + challenge round-robin implemented** in `assembleFeed()` (window-fetch, in-memory, no per-viewer cache, deterministic within a worker window). Fresh-floor subs lead their challenge group; each pass pops one candidate per challenge so a single challenge can't dominate or sit adjacent to itself.
 - [x] **11. Rate limiting** on interactions — `utils/rateLimit.js` (120 actions/hr/user, env `INTERACTION_RATE_LIMIT`, in-memory, 429 on exceed), applied to like/rate/comment/share.
 - [x] **12. User model + trust-weighted votes** — `models/User.js`, `utils/trust.js` (`computeTrust`), worker `syncUserTrust` + weighted aggregation feeding `wilson()`; rate upsert on `/rate`; rate-limit hits persisted as a reserved flag.
 

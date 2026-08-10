@@ -72,13 +72,16 @@ const recordServe = async (submissions, viewerId) => {
     }
 };
 
-// Assemble a trending page: freshness floor + studio cap (deterministic within a worker window)
+// Assemble a trending page: freshness floor + studio cap + challenge round-robin.
+// Deterministic within a worker window - same window => same assembly every request.
 const assembleFeed = (windowSubs, freshSubs, limitNum) => {
     const assembled = [];
     const studioCounts = new Map();
     const seen = new Set();
 
-    const tryAdd = (sub) => {
+    // Claim reserves a slot (dedupe + studio cap). Appending happens only in the
+    // round-robin below so the final order reflects the interleave, not the passes.
+    const claim = (sub) => {
         const key = sub._id.toString();
         if (seen.has(key)) return false;
         const studioKey = sub.studioName || sub.userId;
@@ -86,20 +89,54 @@ const assembleFeed = (windowSubs, freshSubs, limitNum) => {
         if (count >= STUDIO_CAP) return false;
         seen.add(key);
         studioCounts.set(studioKey, count + 1);
-        assembled.push(sub);
         return true;
     };
 
     const freshFloorCount = Math.max(1, Math.ceil(limitNum * 0.25));
-    let freshAdded = 0;
+    const freshChosen = [];
     for (const sub of freshSubs) {
-        if (freshAdded >= freshFloorCount) break;
-        if (tryAdd(sub)) freshAdded++;
+        if (freshChosen.length >= freshFloorCount) break;
+        if (claim(sub)) freshChosen.push(sub);
+    }
+    const freshIds = new Set(freshChosen.map(s => s._id.toString()));
+
+    // Remaining scored candidates not already taken by the freshness floor
+    const rest = [];
+    for (const sub of windowSubs) {
+        if (rest.length >= limitNum * 2) break;
+        if (!seen.has(sub._id.toString())) rest.push(sub);
     }
 
-    for (const sub of windowSubs) {
-        if (assembled.length >= limitNum * 2) break;
-        tryAdd(sub);
+    // Group candidates by challenge (fresh-first within each group), then round-robin
+    // across challenges so no single challenge can dominate or sit adjacent to itself.
+    const keyOf = (sub) => {
+        const cid = sub.challengeId;
+        const id = cid && cid._id ? cid._id : cid;
+        return id ? String(id) : 'none';
+    };
+    const byChallenge = new Map();
+    for (const sub of [...freshChosen, ...rest]) {
+        const cid = keyOf(sub);
+        if (!byChallenge.has(cid)) byChallenge.set(cid, []);
+        byChallenge.get(cid).push(sub);
+    }
+
+    // The freshest challenge leads the rotation; each pass pops one candidate per challenge.
+    let progressed = true;
+    while (progressed) {
+        progressed = false;
+        for (const list of byChallenge.values()) {
+            while (list.length) {
+                const sub = list.shift();
+                const key = sub._id.toString();
+                // Fresh-floor subs already reserved a slot; just append them.
+                if (freshIds.has(key) || claim(sub)) {
+                    assembled.push(sub);
+                    progressed = true;
+                    break;
+                }
+            }
+        }
     }
 
     return assembled;
@@ -221,3 +258,4 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.assembleFeed = assembleFeed;
