@@ -1,5 +1,7 @@
 # Feed Algorithm: Fair Play, Anti-Cheat, and "Hide Rated Videos" Design
 
+> **Design doc ("why it works").** For the narrative (problems → journey → status) read `FEED_REPORT.md`; for the exact formulas, file map, and tunable knobs read `FEED_IMPLEMENTATION.md`.
+
 ## Goal
 
 Two hard requirements for the trending/feed algorithm:
@@ -112,7 +114,7 @@ We mirror that exactly: impressions are serve-counted, and our `engagementEff` i
 
 ### The score formula (v2: impression-normalized, time-independent verdict)
 
-Build on the existing draft (`FEED_IMPROVEMENTS.md`): `score = velocity × decay`. Two flaws in that draft are fixed here:
+The earliest draft was `score = velocity × decay` (engagement ÷ hours since creation). Two flaws in that draft are fixed here:
 
 1. Raw engagement counts reward **exposure, not quality** (rich-get-richer). Rank by **engagement rate per impression** instead.
 2. The `engagement / hours_since_creation` denominator means a 1-hour-old video with 3 likes beats a 5-day video with 100 likes. **Remove the time denominator from scoring entirely** — time-fairness is handled by the verdict/trending split below.
@@ -185,10 +187,10 @@ trust(user) = f(accountAge, interactionCount, agreementWithConsensus)
 
 ### Exposure fairness (protects the ecosystem, not just scores)
 
-From the earlier plan (Step 6, challenge rotation) plus research findings:
+From the earlier research findings:
 
 1. **Freshness floor** — reserve ~25% of feed slots for uploads < 48h old, unconditionally. This is the TikTok "seed audience" principle: new content must get initial exposure regardless of score, or nothing new ever surfaces.
-2. **Studio cap** — max 2 videos from one studio per 20 shown (Step 6 in FEED_PLAN.md).
+2. **Studio cap** — max 2 videos from one studio per 20 shown.
 3. **Challenge rotation (implemented)** — `assembleFeed` groups the trending pool by challenge (fresh-first within each group) and round-robins: one candidate per challenge per pass. The freshest challenge leads; adjacent feed items can't be the same challenge; with C active challenges a single one is naturally bounded to ~1/C of the page. Single-challenge feeds fall back to plain score order.
 
 ### Operational rules (Kaggle / Reddit lessons)
@@ -389,6 +391,7 @@ Sub-challenge cards are a **generated item type** in Feed Assembly — the serve
 ## Implementation Plan (ordered, one commit each)
 
 > **Phase A = correct + no perf risk at current scale. Phase B = the precompute worker. Phase C = hardening.**
+> This is the **algorithm** plan. The full product journey (feed endpoint, polling removal, notifications, comments, lazy loading — with commits) is in `FEED_REPORT.md` → Part 2. All items below are done.
 
 ### Phase A: behavior
 - [x] **1. Add `viewerId` rated-video exclusion** to `/api/feed` (query-time `$nin`). Test: rate a video → refresh feed → video gone, not re-fetched across pages.

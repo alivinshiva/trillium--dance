@@ -1,6 +1,8 @@
 # Feed Implementation Reference (Trending + Ranking)
 
-Reference for the implemented feed algorithm — what each file does, the exact formulas, and where to change every knob. Update this doc whenever you tweak the algorithm.
+> **Reference doc ("where to change it").** For the narrative (problems → journey → status) read `FEED_REPORT.md`; for the design rationale read `FEED_ALGORITHM.md`. Update this doc whenever you tweak the algorithm.
+
+Reference for the implemented feed algorithm — what each file does, the exact formulas, and where to change every knob.
 
 ---
 
@@ -45,8 +47,8 @@ Aggregation pipeline: `$lookup` ratingStats → `$addFields` `averageRating/rati
 
 ### `showgrid-be/utils/rateLimit.js` — in-memory interaction rate limiter (120 actions/hr/user, 429 on exceed). Applied to like/rate/comment/share in `routes/interactions.js`. On 429 it fire-and-forgets `User.lastRateLimitedAt` (reserved trust flag). Env: `INTERACTION_RATE_LIMIT`. Single-instance only — swap for Redis when running 2+ API instances.
 
-### `showgrid-landing/src/context/VideoContext.jsx` — `fetchFeed` appends `viewerId: user.id`.
-### `showgrid-landing/src/components/Discovered.jsx` — sort tabs: Latest | Top | Trending.
+### `showgrid-landing/src/context/VideoContext.jsx` — `fetchFeed` appends `viewerId: user.id`; `getVideoUrls` (lazy loading), `getComments`/`addComment`/`deleteComment` (consolidated comments), `getLeaderboard`, `getBestHook`.
+### `showgrid-landing/src/components/Discovered.jsx` — sort tabs: Latest | Top | Trending | For You (signed-in only); prefetches lazy URLs; sub-challenge slides guarded.
 ### `showgrid-landing/src/components/SubChallengeCard.jsx` — full-slide A/B battle card (muted looped previews, vote → locked live results).
 
 ---
