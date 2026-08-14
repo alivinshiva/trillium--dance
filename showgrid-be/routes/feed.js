@@ -301,11 +301,13 @@ router.get('/', async (req, res) => {
                 Submission.find(filter)
                     .sort({ feedScore: -1, createdAt: -1 })
                     .limit(windowLimit)
+                    .select('-videoUrl') // lazy loading: URLs fetched on-demand
                     .populate('challengeId')
                     .lean(),
                 Submission.find({ ...filter, createdAt: { $gte: freshSince } })
                     .sort({ createdAt: -1 })
                     .limit(limitNum)
+                    .select('-videoUrl')
                     .populate('challengeId')
                     .lean(),
                 sort === 'for_you' ? buildTagAffinity(viewerId) : Promise.resolve(new Map())
@@ -359,6 +361,7 @@ router.get('/', async (req, res) => {
                 .sort(sortQuery)
                 .skip(skip)
                 .limit(limitNum)
+                .select('-videoUrl') // lazy loading: URLs fetched on-demand
                 .populate('challengeId')
                 .lean(),
             Submission.countDocuments(filter)

@@ -9,7 +9,7 @@ import SubChallengeCard from './SubChallengeCard';
 
 
 const Discovered = () => {
-    const { fetchFeed, getPresets, addComment, deleteComment, getComments, likeVideo, rateVideo, shareVideo, getVideoStats, getPublicVideoUrl, nativeShare } = useVideo();
+    const { fetchFeed, getPresets, addComment, deleteComment, getComments, likeVideo, rateVideo, shareVideo, getVideoStats, getPublicVideoUrl, getVideoUrls, nativeShare } = useVideo();
     const { initialVideoId } = useParams();
     const { user } = useUser();
     const { openSignIn } = useClerk();
@@ -67,6 +67,28 @@ const Discovered = () => {
 
     const currentVideo = videos[currentIndex];
     const isSubChallenge = currentVideo?.type === 'sub_challenge';
+
+    // Lazy video loading: feed items ship metadata only; fetch URLs for the
+    // videos just around the current one (prev, current, +2 ahead) in one batch.
+    const [videoUrls, setVideoUrls] = useState({});
+    useEffect(() => {
+        if (!videos.length) return;
+        const wanted = [];
+        const seen = new Set();
+        for (let i = Math.max(0, currentIndex - 1); i < Math.min(videos.length, currentIndex + 3); i++) {
+            const v = videos[i];
+            if (v && v.type !== 'sub_challenge' && !videoUrls[v._id] && !seen.has(v._id)) {
+                seen.add(v._id);
+                wanted.push(v._id);
+            }
+        }
+        if (!wanted.length) return;
+        let cancelled = false;
+        getVideoUrls(wanted).then(map => {
+            if (!cancelled) setVideoUrls(prev => ({ ...prev, ...map }));
+        });
+        return () => { cancelled = true; };
+    }, [videos, currentIndex, videoUrls, getVideoUrls]);
 
     useEffect(() => {
         if (!currentVideo || isSubChallenge) return;
@@ -601,7 +623,12 @@ const Discovered = () => {
                         <SubChallengeCard subChallenge={currentVideo.subChallenge} />
                     ) : (
                         <>
-                            <video ref={videoRef} src={currentVideo.videoUrl} className="w-full h-full object-contain" autoPlay loop playsInline onTimeUpdate={handleTimeUpdate} />
+                            <video ref={videoRef} src={videoUrls[currentVideo._id]} className="w-full h-full object-contain" autoPlay loop playsInline onTimeUpdate={handleTimeUpdate} />
+                            {!videoUrls[currentVideo._id] && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
+                                    <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                </div>
+                            )}
                             {!isPlaying && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10 pointer-events-none">
                                     <Play size={64} fill="white" className="text-white opacity-80" />

@@ -27,10 +27,11 @@ Reference for the implemented feed algorithm — what each file does, the exact 
 | `buildViewerExclusions(viewerId)` | Video IDs to hide for a viewer: rated ones + past re-show limits. |
 | `recordServe(submissions, viewerId)` | +1 `impressions` per serve + writes a `VideoView` per viewer. |
 | `assembleFeed(windowSubs, freshSubs, limitNum)` | Freshness floor (25% slots for <48h uploads) + studio cap (2 per studio) + **challenge round-robin** (groups by challenge, pops one per pass, so no challenge dominates or sits adjacent to itself). Deterministic within a worker window. |
-| Route | Sorts: `latest` (createdAt), `oldest`, `top_rated` (wilsonScore), `trending` (feedScore + assembly). Trending assembly only applies when no `userId` filter. |
+| Route | Sorts: `latest` (createdAt), `oldest`, `top_rated` (wilsonScore), `trending` (feedScore + assembly), `for_you` (tag-affinity reorder). Trending/For You assembly only applies when no `userId` filter. All modes ship metadata only (`.select('-videoUrl')`) — lazy loading. |
 
 ### `showgrid-be/routes/submissions.js` — leaderboard (the competition verdict)
 Aggregation pipeline: `$lookup` ratingStats → `$addFields` `averageRating/ratingCount/wilsonScore` → `$match wilsonScore > 0` → `$sort wilsonScore:-1, averageRating:-1, ratingCount:-1, createdAt:-1` → `$limit`. Time- and exposure-independent.
+- `GET /urls?ids=a,b,c` — on-demand video URLs for lazy loading: approved-only, up to 10 ids, returns `{ id: url }`. Frontend `getVideoUrls(ids)` caches + prefetches prev/current/+2.
 
 ### Schema additions
 - `showgrid-be/models/Submission.js` — fields `feedScore`, `wilsonScore`, `feedScoreUpdatedAt`; indexes `{ feedScore: -1, createdAt: -1 }`, `{ wilsonScore: -1, createdAt: -1 }`. Embedded `comments[]` **removed** — comments live only on `VideoComment`.

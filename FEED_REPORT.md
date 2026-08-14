@@ -198,6 +198,8 @@ Per minute:    ~1 API call, ~50KB transferred (idle)
 
 **Solution:** Load video metadata only. Load `videoUrl` only when video is 1-2 positions from current.
 
+**Status: DONE** — The feed (all sort modes) now returns metadata only (`.select('-videoUrl')`). New `GET /api/submissions/urls?ids=` returns `{ id: url }` for up to 10 approved videos. The frontend caches URLs in state and prefetches a small window (prev, current, +2 ahead) in one request as the user scrolls; a spinner shows until the current video's URL arrives. Sub-challenge A/B previews are unaffected (still populated with their clip URLs).
+
 **Impact:** Faster feed response, less bandwidth for users who don't scroll far.
 
 ---

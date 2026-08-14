@@ -8,6 +8,26 @@ const { VideoRatingAggregate } = require('../models/Interaction');
 const { upload } = require('../config/cloudinary');
 const { requireAuth } = require('../utils/auth');
 
+// GET /urls?ids=a,b,c - on-demand video URLs (lazy loading: the feed strips
+// videoUrl and the client fetches URLs only for the few videos near the current one).
+router.get('/urls', async (req, res) => {
+    try {
+        const raw = (req.query.ids || '').toString();
+        const ids = raw.split(',').map(s => s.trim()).filter(Boolean).slice(0, 10);
+        if (!ids.length) return res.json({});
+
+        const subs = await Submission.find({ _id: { $in: ids }, status: 'approved' })
+            .select('_id videoUrl')
+            .lean();
+
+        const urls = {};
+        for (const s of subs) urls[s._id.toString()] = s.videoUrl;
+        res.json(urls);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 // GET Leaderboard (Submissions sorted by rating)
 router.get('/leaderboard', async (req, res) => {
     try {

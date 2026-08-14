@@ -264,6 +264,20 @@ export const VideoProvider = ({ children }) => {
         }
     };
 
+    // Fetch video URLs on-demand (lazy loading - the feed ships metadata only)
+    const getVideoUrls = async (ids) => {
+        try {
+            const uniq = [...new Set(ids.filter(Boolean))].slice(0, 10);
+            if (!uniq.length) return {};
+            const res = await fetch(`${API_URL}/submissions/urls?ids=${uniq.join(',')}`);
+            if (!res.ok) return {};
+            return await res.json();
+        } catch (err) {
+            console.error("Error fetching video urls:", err);
+            return {};
+        }
+    };
+
     const getApprovedVideos = () => videos.filter(v => v.status === 'approved');
     const getPendingVideos = () => videos.filter(v => v.status === 'pending');
 
@@ -397,6 +411,7 @@ export const VideoProvider = ({ children }) => {
             getLeaderboard,
             getBestHook,
             getPublicVideoUrl,
+            getVideoUrls,
             nativeShare,
             updateSubmissionStatus
         }}>
