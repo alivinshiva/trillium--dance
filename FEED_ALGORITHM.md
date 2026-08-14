@@ -145,21 +145,21 @@ Each term kills a specific attack:
 - **`boost`** — *beat-your-own-average*: normalize a video's engagement efficiency against its studio's 30-day average. A dominant studio gets `boost ≈ 1` (they're near their baseline); an unknown studio that produces a hit gets a large boost. This is the single most effective small-studio/fairness lever.
 - **`maxScoreCeiling`** (optional) — a hard cap so no single video can mathematically crowd out everything else.
 
-#### Worked example (your numbers, corrected)
+#### Worked example (your original numbers, corrected)
 
-> Both videos must obey the hard rule **engagement ≤ impressions** (a video can't earn more likes than times it was shown — that was the old example's bug). Keeping A's original engagement counts with the corrected 50 impressions:
+> Both videos must obey the hard rule **engagement ≤ impressions** (a video can't earn more likes than times it was shown — that was the old example's bug). A's impression count is corrected 5→50; B is your original numbers unchanged. This shows the algorithm's *honest* behavior: per-impression quality is near-identical here, so the popular video rightly wins — but by far less than its exposure advantage.
 
-Video A (new upload, small studio): 50 impressions, 40 likes, 20 comments, 8 shares → rates **0.80 / 0.40 / 0.16**
-Video B (established video): 500 impressions, 250 likes, 100 comments, 40 shares → rates **0.50 / 0.20 / 0.08**
+Video A (new upload): 50 impressions, 40 likes, 20 comments, 8 shares → rates **0.80 / 0.40 / 0.16**
+Video B (popular video): 100 impressions, 70 likes, 40 comments, 20 shares → rates **0.70 / 0.40 / 0.20**
 
 ```
 A: engagementEff = log1p(0.80) + 1.5·log1p(0.40) + 3·log1p(0.16) = 0.59 + 0.50 + 0.45 = 1.54
-B: engagementEff = log1p(0.50) + 1.5·log1p(0.20) + 3·log1p(0.08) = 0.41 + 0.27 + 0.23 = 0.91
+B: engagementEff = log1p(0.70) + 1.5·log1p(0.40) + 3·log1p(0.20) = 0.53 + 0.50 + 0.55 = 1.58
 
-exposureTrust: A = log1p(50) = 3.93   |   B = log1p(500) = 6.22
+exposureTrust: A = log1p(50) = 3.93   |   B = log1p(100) = 4.62
 ```
 
-A is 1.7× more engaging per impression, and despite B's 10× exposure, **A still wins overall** (1.54×3.93 = 6.05 vs 0.91×6.22 = 5.66). Raw likes (250 vs 40) would have crowned B by 6×. The `exposureTrust` term keeps the race close (B trails by only 7%) so B still competes once its rate recovers — it doesn't get crushed purely for being popular.
+A and B are nearly equal per impression (eff 1.54 vs 1.58), so the race comes down to exposure — **B wins overall** (1.58×4.62 = 7.30 vs 1.54×3.93 = 6.05). But note the margin: B has 2× the exposure yet wins by only ~21%, because `exposureTrust` is a log, not a multiplier — a 2× exposure advantage adds just 1.17× to the score. Raw counts would have crowned B by 1.75× (70 likes vs 40). So: when quality is *close*, popularity decides; when quality is genuinely better, it wins (the earlier lesson). Popularity can't bury a better video.
 
 ### Time fairness: early vs late uploaders
 
