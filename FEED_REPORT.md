@@ -176,6 +176,8 @@ Per minute:    ~1 API call, ~50KB transferred (idle)
 
 **Solution:** Implement WebSockets or Server-Sent Events for instant notification delivery.
 
+**Status: DONE (SSE)** — `GET /api/notifications/stream?userId=` is a Server-Sent Events endpoint backed by an in-process hub (`utils/sse.js`, 30s heartbeats, auto-cleanup on disconnect). `utils/notify.js` `createNotification()` persists + broadcasts, so every future notification is live. Frontend `NotificationContext` opens an `EventSource`, dedupes against the seed fetch, and derives `unreadCount` from state (no double-count). Scale note: hub is in-process; move to Redis pub/sub when running 2+ API instances.
+
 **Impact:** Users see comments, likes, approvals in real-time.
 
 ---

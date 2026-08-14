@@ -8,10 +8,12 @@ export const useNotification = () => useContext(NotificationContext);
 export const NotificationProvider = ({ children }) => {
     const { user, isSignedIn } = useUser();
     const [notifications, setNotifications] = useState([]);
-    const [unreadCount, setUnreadCount] = useState(0);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
 
-    // Fetch Notifications
+    // unreadCount is derived from state so live pushes and optimistic reads can't desync.
+    const unreadCount = notifications.filter(n => !n.read).length;
+
+    // Fetch Notifications (seed history on sign-in)
     const fetchNotifications = async () => {
         if (!isSignedIn || !user) return;
 
@@ -20,21 +22,31 @@ export const NotificationProvider = ({ children }) => {
             if (response.ok) {
                 const data = await response.json();
                 setNotifications(data);
-                setUnreadCount(data.filter(n => !n.read).length);
             }
         } catch (error) {
             console.error("Failed to fetch notifications:", error);
         }
     };
 
-    // Initial Fetch only - no polling (use manual refresh or real-time later)
+    // Initial fetch + live Server-Sent Events stream
     useEffect(() => {
-        if (isSignedIn) {
-            fetchNotifications();
-        } else {
+        if (!isSignedIn || !user) {
             setNotifications([]);
-            setUnreadCount(0);
+            return;
         }
+
+        fetchNotifications();
+
+        const es = new EventSource(`${import.meta.env.VITE_API_URL}/notifications/stream?userId=${user.id}`);
+        es.addEventListener('notification', (event) => {
+            const { notification } = JSON.parse(event.data);
+            // Dedupe guards against a race where the initial fetch already returned it.
+            setNotifications(prev => prev.some(n => n._id === notification._id)
+                ? prev
+                : [notification, ...prev]);
+        });
+
+        return () => es.close();
     }, [isSignedIn, user]);
 
     // Mark as Read
@@ -42,7 +54,6 @@ export const NotificationProvider = ({ children }) => {
         try {
             // Optimistic update
             setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
-            setUnreadCount(prev => Math.max(0, prev - 1));
 
             await fetch(`${import.meta.env.VITE_API_URL}/notifications/${id}/read`, { method: 'PATCH' });
         } catch (error) {
@@ -55,7 +66,6 @@ export const NotificationProvider = ({ children }) => {
     const markAllAsRead = async () => {
         try {
             setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-            setUnreadCount(0);
 
             await fetch(`${import.meta.env.VITE_API_URL}/notifications/mark-all-read`, {
                 method: 'PATCH',

@@ -65,6 +65,12 @@ Aggregation pipeline: `$lookup` ratingStats → `$addFields` `averageRating/rati
 - `latest` / `oldest` — `createdAt` sort; `top_rated` — `wilsonScore`; `trending` — `feedScore` window + `assembleFeed`.
 - `for_you` — `buildTagAffinity(viewerId)` (positive ratings/likes/shares → weighted challenge-tag map) + pure `rankForYou(windowSubs, affinity, limit)` (reorder by `feedScore × (1 + AFFINITY_BOOST × tagOverlap)`, studio cap 2, score tiebreak); window `limit × 6`; no viewerId → falls back to trending. Knobs: `AFFINITY_BOOST` (0.5), `AFFINITY_WINDOW_MULT` (6).
 
+### `showgrid-be/utils/sse.js` + `utils/notify.js`
+- `sse.js` — in-process SSE hub: `addClient(userId, res)` (auto-removes on `close`), `broadcastTo(userId, event, data)` (best-effort, dropped dead streams), `countClients()`. Redis pub/sub when multi-instance.
+- `notify.js` — `createNotification({...})` persists via `Notification.create` then `broadcastTo(userId, 'notification', { notification })`.
+- `routes/notifications.js` — `GET /stream?userId=` sets SSE headers (`X-Accel-Buffering: no`), sends `connected` event, 30s `: ping` heartbeat.
+- `showgrid-landing/src/context/NotificationContext.jsx` — `EventSource` stream on sign-in (dedupe vs seed fetch), `unreadCount` derived from state, `es.close()` on sign-out/unmount.
+
 ### `showgrid-be/routes/subChallenges.js`
 - `GET /next?userId=&challengeId=&limit=&skip=` — active, unvoted battles, oldest first.
 - `POST /vote` — rate-limited, idempotent (unique index); returns `{ votesA, votesB, choice, alreadyVoted }`.

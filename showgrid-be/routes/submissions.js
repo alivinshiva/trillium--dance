@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const Submission = require('../models/Submission');
-const Notification = require('../models/Notification');
+const { createNotification } = require('../utils/notify');
 const { generateAiRating } = require('../utils/aiRating');
 const { VideoRatingAggregate } = require('../models/Interaction');
 const { upload } = require('../config/cloudinary');
@@ -248,7 +248,7 @@ router.put('/:id/status', requireAuth, async (req, res) => {
             ? `Your submission for ${submission.challengeId?.title || 'the challenge'} is live!`
             : `Your submission needs some changes.`);
 
-        await Notification.create({
+        await createNotification({
             userId: submission.userId,
             type: notificationType,
             title,
