@@ -78,38 +78,45 @@ export const VideoProvider = ({ children }) => {
         }
     };
 
-    // Add Comment - Post to backend
-    const addComment = async (submissionId, commentData) => {
+    // Add Comment - consolidated on the VideoComment collection
+    const addComment = async (videoId, commentData) => {
         try {
             const token = await getToken();
-            const res = await fetch(`${API_URL}/submissions/${submissionId}/comments`, {
+            const res = await fetch(`${API_URL}/interactions/comment`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(commentData)
+                body: JSON.stringify({ videoId, ...commentData })
             });
 
             if (!res.ok) throw new Error('Failed to add comment');
 
-            // Get updated submission
-            const updatedSubmission = await res.json();
-
-            // Update local state
-            setVideos(prev => prev.map(v => v._id === updatedSubmission._id ? updatedSubmission : v));
-            return updatedSubmission;
+            return await res.json();
         } catch (err) {
             console.error("Error adding comment:", err);
             throw err;
         }
     }
 
-    // Delete Comment
-    const deleteComment = async (submissionId, commentId) => {
+    // Fetch Comments (VideoComment collection, top-level only)
+    const getComments = async (videoId) => {
+        try {
+            const res = await fetch(`${API_URL}/interactions/comments/${videoId}`);
+            if (!res.ok) throw new Error('Failed to fetch comments');
+            return await res.json();
+        } catch (err) {
+            console.error("Error fetching comments:", err);
+            return [];
+        }
+    };
+
+    // Delete Comment (soft delete, author only)
+    const deleteComment = async (videoId, commentId, userId) => {
         try {
             const token = await getToken();
-            const res = await fetch(`${API_URL}/submissions/${submissionId}/comments/${commentId}`, {
+            const res = await fetch(`${API_URL}/interactions/comments/${commentId}?userId=${userId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -118,11 +125,7 @@ export const VideoProvider = ({ children }) => {
 
             if (!res.ok) throw new Error('Failed to delete comment');
 
-            const updatedSubmission = await res.json();
-
-            // Update local state
-            setVideos(prev => prev.map(v => v._id === updatedSubmission._id ? updatedSubmission : v));
-            return updatedSubmission;
+            return await res.json();
         } catch (err) {
             console.error("Error deleting comment:", err);
             throw err;
@@ -377,6 +380,7 @@ export const VideoProvider = ({ children }) => {
             addVideo,
             addComment,
             deleteComment,
+            getComments,
             deleteVideo,
             getApprovedVideos,
             getPendingVideos,

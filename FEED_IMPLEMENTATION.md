@@ -33,8 +33,8 @@ Reference for the implemented feed algorithm — what each file does, the exact 
 Aggregation pipeline: `$lookup` ratingStats → `$addFields` `averageRating/ratingCount/wilsonScore` → `$match wilsonScore > 0` → `$sort wilsonScore:-1, averageRating:-1, ratingCount:-1, createdAt:-1` → `$limit`. Time- and exposure-independent.
 
 ### Schema additions
-- `showgrid-be/models/Submission.js` — fields `feedScore`, `wilsonScore`, `feedScoreUpdatedAt`; indexes `{ feedScore: -1, createdAt: -1 }`, `{ wilsonScore: -1, createdAt: -1 }`.
-- `showgrid-be/models/Interaction.js` — `VideoView { videoId, userId, seenAt }` (indexes on `{ userId, videoId }` and `{ userId, seenAt: -1 }`); `VideoAggregate.impressions`.
+- `showgrid-be/models/Submission.js` — fields `feedScore`, `wilsonScore`, `feedScoreUpdatedAt`; indexes `{ feedScore: -1, createdAt: -1 }`, `{ wilsonScore: -1, createdAt: -1 }`. Embedded `comments[]` **removed** — comments live only on `VideoComment`.
+- `showgrid-be/models/Interaction.js` — `VideoView { videoId, userId, seenAt }` (indexes on `{ userId, videoId }` and `{ userId, seenAt: -1 }`); `VideoAggregate.impressions` + `comments` (single count source for feed scoring + UI).
 - `showgrid-be/models/User.js` — `_id` = Clerk userId; `trust { score, accountAge, history, agreement, flags }`; `stats.*`; `lastRateLimitedAt`. Index on `trust.score`. Upserted on `/rate` (`routes/interactions.js`) and by `syncUserTrust`.
 
 ### `showgrid-be/utils/trust.js` — pure trust math (no DB access)
@@ -64,6 +64,12 @@ Aggregation pipeline: `$lookup` ratingStats → `$addFields` `averageRating/rati
 ### `showgrid-be/routes/feed.js` (sort modes)
 - `latest` / `oldest` — `createdAt` sort; `top_rated` — `wilsonScore`; `trending` — `feedScore` window + `assembleFeed`.
 - `for_you` — `buildTagAffinity(viewerId)` (positive ratings/likes/shares → weighted challenge-tag map) + pure `rankForYou(windowSubs, affinity, limit)` (reorder by `feedScore × (1 + AFFINITY_BOOST × tagOverlap)`, studio cap 2, score tiebreak); window `limit × 6`; no viewerId → falls back to trending. Knobs: `AFFINITY_BOOST` (0.5), `AFFINITY_WINDOW_MULT` (6).
+
+### Comments (consolidated on `VideoComment` — `routes/interactions.js`)
+- `POST /comment` — rate-limited; creates a `VideoComment`, +1 `VideoAggregate.comments`; enforces one top-level comment per user (preserved from the removed embedded path).
+- `GET /comments/:videoId` — top-level, non-deleted, newest first (limit 20).
+- `DELETE /comments/:commentId?userId=` — soft delete (`isDeleted: true`, keeps reply threads), author-only, −1 `VideoAggregate.comments`.
+- Frontend: `VideoContext` `addComment`/`getComments`/`deleteComment`; `Discovered.jsx` loads comments on drawer open into local state; counts shown from `interactionStats.comments`.
 
 ### `showgrid-be/utils/sse.js` + `utils/notify.js`
 - `sse.js` — in-process SSE hub: `addClient(userId, res)` (auto-removes on `close`), `broadcastTo(userId, event, data)` (best-effort, dropped dead streams), `countClients()`. Redis pub/sub when multi-instance.

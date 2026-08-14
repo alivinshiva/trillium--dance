@@ -160,6 +160,18 @@ router.post('/comment', requireAuth, rateLimit, async (req, res) => {
     try {
         const { videoId, userId, userName, userAvatar, body, parentId } = req.body;
 
+        if (!videoId || !body || !body.trim()) {
+            return res.status(400).json({ message: 'videoId and body are required' });
+        }
+
+        // Preserve the "one comment per user" rule (previously enforced on the embedded path).
+        if (!parentId) {
+            const existing = await VideoComment.exists({ videoId, userId, parentId: null, isDeleted: false });
+            if (existing) {
+                return res.status(400).json({ message: 'You have already commented on this video' });
+            }
+        }
+
         const comment = await VideoComment.create({
             videoId,
             userId,
@@ -172,6 +184,30 @@ router.post('/comment', requireAuth, rateLimit, async (req, res) => {
         await updateAggregate(videoId, 'comments', 1);
 
         res.status(201).json(comment);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// DELETE a comment (soft delete; author only) - keeps reply threads intact.
+router.delete('/comments/:commentId', requireAuth, async (req, res) => {
+    try {
+        const { commentId } = req.params;
+        const { userId } = req.query;
+
+        const comment = await VideoComment.findById(commentId);
+        if (!comment || comment.isDeleted) {
+            return res.status(404).json({ message: 'Comment not found' });
+        }
+        if (userId && comment.userId !== userId) {
+            return res.status(403).json({ message: 'You can only delete your own comments' });
+        }
+
+        comment.isDeleted = true;
+        await comment.save();
+        await updateAggregate(comment.videoId, 'comments', -1);
+
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

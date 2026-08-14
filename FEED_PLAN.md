@@ -112,13 +112,13 @@
 
 ## Step 7: Comment System Consolidation
 **Problem fixed:** Comment duplication (bonus cleanup)
-**Status:** PENDING
+**Status:** DONE
 
 ### What to do:
-- [ ] Remove embedded `comments[]` from Submission model
-- [ ] Use only `VideoComment` collection
-- [ ] Update feed to fetch comments on-demand
-- [ ] Update frontend to use interactions comments API
+- [x] Remove embedded `comments[]` from Submission model
+- [x] Use only `VideoComment` collection
+- [x] Update feed to fetch comments on-demand
+- [x] Update frontend to use interactions comments API
 
 ### Files to modify:
 - MODIFY: `showgrid-be/models/Submission.js`

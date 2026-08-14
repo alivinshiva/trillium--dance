@@ -147,72 +147,9 @@ router.post('/', requireAuth, upload.single('file'), async (req, res) => {
     }
 });
 
-// POST a comment to a submission
-router.post('/:id/comments', requireAuth, async (req, res) => {
-    try {
-        const { userId, userName, userAvatar, text, type } = req.body;
-        const submission = await Submission.findById(req.params.id);
-
-        if (!submission) {
-            return res.status(404).json({ message: 'Submission not found' });
-        }
-
-        // Check if user has already commented
-        /* 
-        // Allow multiple comments? User request implies they can delete and maybe re-comment?
-        // Current logic blocks multiple comments. 
-        // If we want to allow delete, we should keep this restriction OR if they delete, they can comment again.
-        // The current restriction is fine.
-        */
-        const existingComment = submission.comments.find(c => c.userId === userId);
-        if (existingComment) {
-            return res.status(400).json({ message: 'You have already commented on this video' });
-        }
-
-        submission.comments.push({
-            userId,
-            userName,
-            userAvatar,
-            text,
-            type,
-            createdAt: new Date()
-        });
-
-        await submission.save();
-        await submission.populate('challengeId');
-        res.json(submission);
-    } catch (err) {
-        console.error("Error adding comment:", err);
-        res.status(500).json({ message: err.message });
-    }
-});
-
-// DELETE a comment
-router.delete('/:id/comments/:commentId', requireAuth, async (req, res) => {
-    try {
-        const { id, commentId } = req.params;
-        const submission = await Submission.findById(id);
-
-        if (!submission) {
-            return res.status(404).json({ message: 'Submission not found' });
-        }
-
-        // Filter out the comment
-        const initialLength = submission.comments.length;
-        submission.comments = submission.comments.filter(c => c._id.toString() !== commentId);
-
-        if (submission.comments.length === initialLength) {
-            return res.status(404).json({ message: 'Comment not found' });
-        }
-
-        await submission.save();
-        await submission.populate('challengeId');
-        res.json(submission);
-    } catch (err) {
-        console.error("Error deleting comment:", err);
-        res.status(500).json({ message: err.message });
-    }
-});
+// Comments consolidated on the VideoComment collection (routes/interactions.js:
+// POST /interactions/comment, GET /interactions/comments/:videoId,
+// DELETE /interactions/comments/:commentId). No embedded comments on submissions.
 
 // DELETE a submission
 router.delete('/:id', requireAuth, async (req, res) => {

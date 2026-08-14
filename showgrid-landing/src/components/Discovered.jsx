@@ -9,7 +9,7 @@ import SubChallengeCard from './SubChallengeCard';
 
 
 const Discovered = () => {
-    const { fetchFeed, getPresets, addComment, deleteComment, likeVideo, rateVideo, shareVideo, getVideoStats, getPublicVideoUrl, nativeShare } = useVideo();
+    const { fetchFeed, getPresets, addComment, deleteComment, getComments, likeVideo, rateVideo, shareVideo, getVideoStats, getPublicVideoUrl, nativeShare } = useVideo();
     const { initialVideoId } = useParams();
     const { user } = useUser();
     const { openSignIn } = useClerk();
@@ -147,7 +147,20 @@ const Discovered = () => {
 
     // Commenting Logic
     const [showComments, setShowComments] = useState(false);
+    const [comments, setComments] = useState([]);
     const [commentPresets, setCommentPresets] = useState({ positive: [], neutral: [], negative: [] });
+
+    // Load comments on-demand when the drawer opens (VideoComment collection)
+    useEffect(() => {
+        if (!showComments || !currentVideo || isSubChallenge) return;
+        let cancelled = false;
+        const load = async () => {
+            const data = await getComments(currentVideo._id);
+            if (!cancelled) setComments(data);
+        };
+        load();
+        return () => { cancelled = true; };
+    }, [showComments, currentVideo, getComments, isSubChallenge]);
 
     useEffect(() => {
         if (isSubChallenge) return;
@@ -290,11 +303,15 @@ const Discovered = () => {
         if (!user) return openSignIn();
         if (!currentVideo) return;
         try {
-            await addComment(currentVideo._id, {
-                userId: user.id, userName: user.fullName || user.username, userAvatar: user.imageUrl, text, type
+            const comment = await addComment(currentVideo._id, {
+                userId: user.id, userName: user.fullName || user.username, userAvatar: user.imageUrl, body: text
             });
-            setShowComments(false);
-        } catch (err) { console.error("Failed to post comment", err); }
+            setComments(prev => [comment, ...prev]);
+            setInteractionStats(prev => ({ ...prev, comments: (prev.comments || 0) + 1 }));
+        } catch (err) {
+            console.error("Failed to post comment", err);
+            if (err.message?.includes('already commented')) setShowComments(false);
+        }
     };
 
     const handleShare = async (videoId) => {
@@ -559,7 +576,7 @@ const Discovered = () => {
                                     <div onClick={() => setShowComments(true)} className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center hover:bg-white/20 hover:scale-110 cursor-pointer transition-all shadow-lg">
                                         <MessageCircle size={24} color="white" />
                                     </div>
-                                    <span className="text-[10px] font-bold text-white shadow-black drop-shadow-md">{currentVideo.comments?.length || 0}</span>
+                                    <span className="text-[10px] font-bold text-white shadow-black drop-shadow-md">{interactionStats.comments}</span>
                                 </div>
 
                                 <div className="flex flex-col items-center gap-1 group">
@@ -727,7 +744,7 @@ const Discovered = () => {
                                     {/* Comment Button */}
                                     <div className="flex flex-col items-center gap-1" onClick={() => user ? setShowComments(true) : openSignIn()}>
                                         <MessageCircle size={24} color="white" />
-                                        <span className="text-[10px] font-bold text-white drop-shadow-md">{currentVideo.comments?.length || 0}</span>
+                                        <span className="text-[10px] font-bold text-white drop-shadow-md">{interactionStats.comments}</span>
                                     </div>
 
                                     <div className="flex flex-col items-center gap-1" onClick={() => handleShare(currentVideo._id)}>
@@ -745,7 +762,7 @@ const Discovered = () => {
             <div className={`fixed inset-x-0 bottom-0 z-50 bg-[#111] border-t border-white/10 rounded-t-3xl transition-transform duration-300 ease-in-out flex flex-col max-h-[70vh] shadow-2xl shadow-black ${showComments ? 'translate-y-0' : 'translate-y-full'}`}>
                 {/* Drawer Header */}
                 <div className="flex items-center justify-between p-6 border-b border-white/5 relative bg-[#111] rounded-t-3xl z-10 shrink-0">
-                    <h3 className="text-xl font-bold text-white">Comments <span className="text-white/40 text-sm ml-2">{currentVideo.comments?.length || 0}</span></h3>
+                    <h3 className="text-xl font-bold text-white">Comments <span className="text-white/40 text-sm ml-2">{interactionStats.comments}</span></h3>
                     <button onClick={() => setShowComments(false)} className="p-2 bg-white/5 rounded-full text-white/40 hover:text-white transition-colors">
                         <ChevronDown size={20} />
                     </button>
@@ -799,10 +816,10 @@ const Discovered = () => {
                     {/* 2. Existing Comments List */}
                     <div className="space-y-4">
                         <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest pl-1">Discussion</h4>
-                        {currentVideo?.comments && currentVideo.comments.length > 0 ? (
+                        {comments.length > 0 ? (
                             <div className="space-y-4">
-                                {currentVideo.comments.map((comment, index) => (
-                                    <div key={index} className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: `${index * 50}ms` }}>
+                                {comments.map((comment, index) => (
+                                    <div key={comment._id || index} className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: `${index * 50}ms` }}>
                                         <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0 overflow-hidden">
                                             {comment.userAvatar ? (
                                                 <img src={comment.userAvatar} alt={comment.userName} className="w-full h-full object-cover" />
@@ -820,10 +837,14 @@ const Discovered = () => {
                                                 </div>
                                                 {user && user.id === comment.userId && (
                                                     <button
-                                                        onClick={(e) => {
+                                                        onClick={async (e) => {
                                                             e.stopPropagation();
                                                             if (confirm('Delete this comment?')) {
-                                                                deleteComment(currentVideo._id, comment._id);
+                                                                try {
+                                                                    await deleteComment(currentVideo._id, comment._id, user.id);
+                                                                    setComments(prev => prev.filter(c => c._id !== comment._id));
+                                                                    setInteractionStats(prev => ({ ...prev, comments: Math.max(0, (prev.comments || 0) - 1) }));
+                                                                } catch (err) { console.error("Failed to delete comment", err); }
                                                             }
                                                         }}
                                                         className="text-red-500 hover:text-red-400 transition-colors p-1"
@@ -833,7 +854,7 @@ const Discovered = () => {
                                                 )}
                                             </div>
                                             <p className="text-sm text-white/80 leading-relaxed bg-white/5 p-3 rounded-r-xl rounded-bl-xl border border-white/5">
-                                                {comment.text}
+                                                {comment.body}
                                             </p>
                                         </div>
                                     </div>

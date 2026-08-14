@@ -187,6 +187,8 @@ Per minute:    ~1 API call, ~50KB transferred (idle)
 
 **Solution:** Remove embedded array, use only `VideoComment` collection. Fetch comments on-demand.
 
+**Status: DONE** — Embedded endpoints removed from `routes/submissions.js`; `Submission.comments` removed from the schema. All commenting goes through `VideoComment`: `POST /interactions/comment` (now enforces the previous one-comment-per-user rule on top-level comments, rate-limited), `GET /interactions/comments/:videoId` (top-level, non-deleted, newest first), and new `DELETE /interactions/comments/:commentId` (soft delete, author-only via `userId` query, keeps reply threads; decrements the aggregate). `VideoAggregate.comments` remains the single count source for feed scoring + the UI. Frontend fetches comments on drawer open, tracks them in local state, and shows counts from `interactionStats.comments`.
+
 **Impact:** Data consistency, reduced document size, cleaner architecture.
 
 ---
