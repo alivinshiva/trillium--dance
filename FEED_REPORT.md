@@ -223,7 +223,9 @@ Current setup handles up to ~50K submissions comfortably. Beyond that, add:
 
 ## Next Steps
 
-1. Implement trending score (Step 5 in FEED_PLAN.md)
-2. Add creator frequency cap (Step 6)
-3. Consider Redis for feed caching at scale
-4. Evaluate WebSocket needs for real-time features
+All seven scope items (P1 trending, P2 creator cap, P3 challenge rotation, P4 For You, P5 real-time notifications, P6 comment consolidation, P7 lazy loading) are **done**. Remaining ideas when you want them:
+
+1. Redis cache for feed top-pool at scale (trigger: feed query > 100ms consistently)
+2. `VideoView`-based "hide viewed" option (see FEED_ALGORITHM.md)
+3. Move SSE hub to Redis pub/sub when running 2+ API instances
+4. Lockstep anti-cheat detection (rate-limit hits already persist `lastRateLimitedAt`)
