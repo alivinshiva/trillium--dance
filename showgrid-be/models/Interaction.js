@@ -81,6 +81,17 @@ const videoRatingAggregateSchema = new mongoose.Schema({
 });
 videoRatingAggregateSchema.index({ average: -1 }); // Index for Leaderboard sorting
 
+// --- Sub-challenge votes ---
+
+// One vote per (subChallenge, user); unique index enforces it.
+const subChallengeVoteSchema = new mongoose.Schema({
+    subChallengeId: { type: mongoose.Schema.Types.ObjectId, ref: 'SubChallenge', required: true },
+    userId: { type: String, required: true },
+    choice: { type: String, enum: ['A', 'B'], required: true },
+    createdAt: { type: Date, default: Date.now }
+});
+subChallengeVoteSchema.index({ subChallengeId: 1, userId: 1 }, { unique: true });
+
 module.exports = {
     VideoLike: mongoose.model('VideoLike', videoLikeSchema),
     VideoComment: mongoose.model('VideoComment', videoCommentSchema),
@@ -88,5 +99,6 @@ module.exports = {
     VideoRating: mongoose.model('VideoRating', videoRatingSchema),
     VideoView: mongoose.model('VideoView', videoViewSchema),
     VideoAggregate: mongoose.model('VideoAggregate', videoAggregateSchema),
-    VideoRatingAggregate: mongoose.model('VideoRatingAggregate', videoRatingAggregateSchema)
+    VideoRatingAggregate: mongoose.model('VideoRatingAggregate', videoRatingAggregateSchema),
+    SubChallengeVote: mongoose.model('SubChallengeVote', subChallengeVoteSchema)
 };

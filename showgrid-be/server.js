@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const { ClerkExpressWithAuth } = require('./utils/auth');
 const { startFeedScoreWorker } = require('./workers/feedScores');
+const { startSubChallengeWorker } = require('./workers/subChallenges');
 
 const app = express();
 const PORT = process.env.PORT;
@@ -23,6 +24,7 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => {
         console.log('MongoDB Connected (ShowGrid User Backend)');
         startFeedScoreWorker();
+        startSubChallengeWorker();
     })
     .catch(err => console.error('MongoDB Connection Error:', err));
 
@@ -32,6 +34,7 @@ const submissionRoutes = require('./routes/submissions');
 const feedRoutes = require('./routes/feed');
 const interactionRoutes = require('./routes/interactions');
 const notificationRoutes = require('./routes/notifications');
+const subChallengeRoutes = require('./routes/subChallenges');
 
 app.use('/api/challenges', (req, res, next) => {
     console.log('API Request: /api/challenges');
@@ -57,6 +60,11 @@ app.use('/api/notifications', (req, res, next) => {
     console.log('API Request: /api/notifications');
     next();
 }, notificationRoutes);
+
+app.use('/api/sub-challenges', (req, res, next) => {
+    console.log('API Request: /api/sub-challenges');
+    next();
+}, subChallengeRoutes);
 
 app.get('/', (req, res) => {
     res.send('ShowGrid User Backend Running on Port ' + PORT);

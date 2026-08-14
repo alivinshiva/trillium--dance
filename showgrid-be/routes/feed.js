@@ -2,10 +2,12 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const Submission = require('../models/Submission');
+const SubChallenge = require('../models/SubChallenge');
 const {
     VideoRating,
     VideoView,
-    VideoAggregate
+    VideoAggregate,
+    SubChallengeVote
 } = require('../models/Interaction');
 
 // Re-show policy (Publisher Boost) - tunable via env
@@ -142,6 +144,38 @@ const assembleFeed = (windowSubs, freshSubs, limitNum) => {
     return assembled;
 };
 
+// Active sub-challenges this viewer hasn't voted on yet (oldest active first).
+const getUnvotedSubChallenges = async (viewerId, limit, skip) => {
+    const votedIds = viewerId
+        ? await SubChallengeVote.find({ userId: viewerId }).distinct('subChallengeId')
+        : [];
+    const filter = { status: 'active' };
+    if (votedIds.length) filter._id = { $nin: votedIds };
+    return SubChallenge.find(filter)
+        .sort({ createdAt: 1 })
+        .skip(skip || 0)
+        .limit(limit)
+        .populate('videoAId')
+        .populate('videoBId')
+        .lean();
+};
+
+// Interleave sub-challenge cards ~1 per 10 video slots. They are generated items,
+// not rankings - they don't consume studio-cap or freshness-floor slots.
+const interleaveSubChallenges = (page, subs) => {
+    if (!subs.length) return page;
+    const out = [];
+    let si = 0;
+    for (let i = 0; i < page.length; i++) {
+        if (i > 0 && i % 10 === 0 && si < subs.length) {
+            out.push({ type: 'sub_challenge', subChallenge: subs[si++] });
+        }
+        out.push(page[i]);
+    }
+    while (si < subs.length) out.push({ type: 'sub_challenge', subChallenge: subs[si++] });
+    return out;
+};
+
 // GET /api/feed - Paginated, filtered, sorted feed of approved submissions
 router.get('/', async (req, res) => {
     try {
@@ -198,8 +232,14 @@ router.get('/', async (req, res) => {
 
             await recordServe(page, viewerId);
 
+            // Interleave sub-challenge cards (~1 per 10 slots); per-page offset avoids
+            // repeating the same card every page without votes.
+            const subCount = Math.max(1, Math.ceil(limitNum / 10));
+            const subChallenges = await getUnvotedSubChallenges(viewerId, subCount, (pageNum - 1) * subCount);
+            const data = interleaveSubChallenges(page, subChallenges);
+
             return res.json({
-                data: page,
+                data,
                 pagination: {
                     page: pageNum,
                     limit: limitNum,
