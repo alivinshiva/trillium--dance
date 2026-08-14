@@ -145,19 +145,21 @@ Each term kills a specific attack:
 - **`boost`** — *beat-your-own-average*: normalize a video's engagement efficiency against its studio's 30-day average. A dominant studio gets `boost ≈ 1` (they're near their baseline); an unknown studio that produces a hit gets a large boost. This is the single most effective small-studio/fairness lever.
 - **`maxScoreCeiling`** (optional) — a hard cap so no single video can mathematically crowd out everything else.
 
-#### Worked example (your numbers)
+#### Worked example (your numbers, corrected)
 
-Video A: 5 impressions, 40 likes, 20 comments, 8 shares → rates **8.0 / 4.0 / 1.6**
-Video B: 100 impressions, 70 likes, 40 comments, 20 shares → rates **0.7 / 0.4 / 0.2**
+> Both videos must obey the hard rule **engagement ≤ impressions** (a video can't earn more likes than times it was shown — that was the old example's bug). Keeping A's original engagement counts with the corrected 50 impressions:
+
+Video A (new upload, small studio): 50 impressions, 40 likes, 20 comments, 8 shares → rates **0.80 / 0.40 / 0.16**
+Video B (established video): 500 impressions, 250 likes, 100 comments, 40 shares → rates **0.50 / 0.20 / 0.08**
 
 ```
-A: engagementEff = log1p(8) + 1.5·log1p(4) + 3·log1p(1.6) = 2.20 + 2.41 + 2.87 = 7.48
-B: engagementEff = log1p(0.7) + 1.5·log1p(0.4) + 3·log1p(0.2) = 0.53 + 0.51 + 0.55 = 1.59
+A: engagementEff = log1p(0.80) + 1.5·log1p(0.40) + 3·log1p(0.16) = 0.59 + 0.50 + 0.45 = 1.54
+B: engagementEff = log1p(0.50) + 1.5·log1p(0.20) + 3·log1p(0.08) = 0.41 + 0.27 + 0.23 = 0.91
 
-exposureTrust: A = log1p(5) = 1.79   |   B = log1p(100) = 4.62
+exposureTrust: A = log1p(50) = 3.93   |   B = log1p(500) = 6.22
 ```
 
-A is 4.7× more engaging per impression, and despite B's 20× exposure, **A wins overall** (7.48×1.79 = 13.4 vs 1.59×4.62 = 7.3). Raw counts would have crowned B. The `exposureTrust` term keeps it close enough that B still competes once its rate recovers — it doesn't get crushed purely for being popular.
+A is 1.7× more engaging per impression, and despite B's 10× exposure, **A still wins overall** (1.54×3.93 = 6.05 vs 0.91×6.22 = 5.66). Raw likes (250 vs 40) would have crowned B by 6×. The `exposureTrust` term keeps the race close (B trails by only 7%) so B still competes once its rate recovers — it doesn't get crushed purely for being popular.
 
 ### Time fairness: early vs late uploaders
 
