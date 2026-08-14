@@ -61,6 +61,10 @@ Aggregation pipeline: `$lookup` ratingStats → `$addFields` `averageRating/rati
 - `generatePairs()` / `buildPairs()` (pure) — new pairs: same challenge, both `wilsonScore > 0`, `|wilson − wilson| ≤ 0.8`, never same studio, max 3 concurrent battles per video, no duplicate active pairs, type rotation `hook → transition → ending`.
 - Knobs: `VOTE_THRESHOLD` 20, `CHALLENGE_LIFETIME_MS` 48h, `SCORE_PARITY` 0.8, `CONCURRENT_CAP_PER_VIDEO` 3, `NEW_PAIRS_PER_RUN` 10.
 
+### `showgrid-be/routes/feed.js` (sort modes)
+- `latest` / `oldest` — `createdAt` sort; `top_rated` — `wilsonScore`; `trending` — `feedScore` window + `assembleFeed`.
+- `for_you` — `buildTagAffinity(viewerId)` (positive ratings/likes/shares → weighted challenge-tag map) + pure `rankForYou(windowSubs, affinity, limit)` (reorder by `feedScore × (1 + AFFINITY_BOOST × tagOverlap)`, studio cap 2, score tiebreak); window `limit × 6`; no viewerId → falls back to trending. Knobs: `AFFINITY_BOOST` (0.5), `AFFINITY_WINDOW_MULT` (6).
+
 ### `showgrid-be/routes/subChallenges.js`
 - `GET /next?userId=&challengeId=&limit=&skip=` — active, unvoted battles, oldest first.
 - `POST /vote` — rate-limited, idempotent (unique index); returns `{ votesA, votesB, choice, alreadyVoted }`.

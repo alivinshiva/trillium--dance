@@ -372,6 +372,14 @@ const Discovered = () => {
                         >
                             Trending
                         </button>
+                        {user && (
+                            <button
+                                onClick={() => setFeedSort('for_you')}
+                                className={`p-2 rounded-lg text-[10px] font-bold transition-colors ${feedSort === 'for_you' ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white'}`}
+                            >
+                                For You
+                            </button>
+                        )}
                     </div>
                 </div>
             )}
@@ -399,6 +407,14 @@ const Discovered = () => {
                         >
                             Trending
                         </button>
+                        {user && (
+                            <button
+                                onClick={() => setFeedSort('for_you')}
+                                className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-colors ${feedSort === 'for_you' ? 'bg-white/20 text-white' : 'text-white/60'}`}
+                            >
+                                For You
+                            </button>
+                        )}
                     </div>
                 )}
 

@@ -3,9 +3,12 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const Submission = require('../models/Submission');
 const SubChallenge = require('../models/SubChallenge');
+const Challenge = require('../models/Challenge');
 const {
     VideoRating,
     VideoView,
+    VideoLike,
+    VideoShare,
     VideoAggregate,
     SubChallengeVote
 } = require('../models/Interaction');
@@ -17,6 +20,10 @@ const RE_SHOW_COOLDOWN_MS = (parseInt(process.env.RE_SHOW_COOLDOWN_HOURS) || 24)
 // Trending assembly
 const FRESH_WINDOW_MS = 48 * 60 * 60 * 1000;
 const STUDIO_CAP = 2;
+
+// "For You" personalization - additive delivery-layer boost, never touches feedScore.
+const AFFINITY_BOOST = parseFloat(process.env.AFFINITY_BOOST) || 0.5;
+const AFFINITY_WINDOW_MULT = parseInt(process.env.AFFINITY_WINDOW_MULT) || 6;
 
 // Videos this viewer must not see: rated (Requirement 1) or past re-show limits (Re-Show Policy)
 const buildViewerExclusions = async (viewerId) => {
@@ -144,6 +151,79 @@ const assembleFeed = (windowSubs, freshSubs, limitNum) => {
     return assembled;
 };
 
+// Per-user tag affinity from explicit positive signals (rated 4-5, liked, or shared).
+// Returns a Map<tag, weight>; only meaningful signals contribute.
+const buildTagAffinity = async (viewerId) => {
+    const [ratings, likes, shares] = await Promise.all([
+        VideoRating.find({ userId: viewerId, rating: { $gte: 4 } }).select('videoId rating').lean(),
+        VideoLike.find({ userId: viewerId }).select('videoId').lean(),
+        VideoShare.find({ userId: viewerId }).select('videoId').lean()
+    ]);
+
+    const videoWeights = new Map(); // videoId -> weight
+    const add = (id, w) => videoWeights.set(id.toString(), (videoWeights.get(id.toString()) || 0) + w);
+    for (const r of ratings) add(r.videoId, r.rating - 2); // 4★=2, 5★=3
+    for (const l of likes) add(l.videoId, 1);
+    for (const s of shares) add(s.videoId, 2); // sharing is the strongest signal
+
+    if (!videoWeights.size) return new Map();
+
+    const subs = await Submission.find({ _id: { $in: [...videoWeights.keys()] } })
+        .select('challengeId')
+        .lean();
+    const challengeIds = [...new Set(subs.map(s => s.challengeId).filter(Boolean))];
+    const challenges = challengeIds.length
+        ? await Challenge.find({ _id: { $in: challengeIds } }).select('tags').lean()
+        : [];
+    const tagOf = new Map(challenges.map(c => [c._id.toString(), c.tags || []]));
+
+    const affinity = new Map();
+    for (const s of subs) {
+        const w = videoWeights.get(s._id.toString());
+        for (const tag of tagOf.get(String(s.challengeId)) || []) {
+            affinity.set(tag, (affinity.get(tag) || 0) + w);
+        }
+    }
+    return affinity;
+};
+
+// Re-rank the scored window by tag overlap (delivery layer only - feedScore untouched).
+// overlap = fraction of the video's challenge tags the user has shown affinity for.
+// Pure/exported for unit tests.
+const rankForYou = (windowSubs, affinity, limitNum) => {
+    let ranked = windowSubs;
+    if (affinity.size) {
+        ranked = windowSubs.map(sub => {
+            const tags = (sub.challengeId && sub.challengeId.tags) || [];
+            const matched = tags.filter(t => affinity.has(t)).length;
+            const overlap = tags.length ? matched / tags.length : 0;
+            return {
+                sub,
+                overlap,
+                personalized: sub.feedScore * (1 + AFFINITY_BOOST * overlap)
+            };
+        })
+        .sort((a, b) =>
+            b.personalized - a.personalized ||
+            new Date(b.sub.createdAt) - new Date(a.sub.createdAt)
+        )
+        .map(s => s.sub);
+    }
+
+    // Studio cap (2) - a creator can't dominate even a personalized feed.
+    const studioCounts = new Map();
+    const out = [];
+    for (const sub of ranked) {
+        if (out.length >= limitNum) break;
+        const studioKey = sub.studioName || sub.userId;
+        const count = studioCounts.get(studioKey) || 0;
+        if (count >= STUDIO_CAP) continue;
+        studioCounts.set(studioKey, count + 1);
+        out.push(sub);
+    }
+    return out;
+};
+
 // Active sub-challenges this viewer hasn't voted on yet (oldest active first).
 const getUnvotedSubChallenges = async (viewerId, limit, skip) => {
     const votedIds = viewerId
@@ -210,11 +290,14 @@ router.get('/', async (req, res) => {
         }
 
         // Trending: score-ranked window + assembly (freshness floor + studio cap)
-        if (sort === 'trending' && !userId) {
-            const windowLimit = limitNum * 3;
+        if ((sort === 'trending' || sort === 'for_you') && !userId) {
+            // For You without a viewer = no profile, so fall back to plain trending.
+            if (sort === 'for_you' && !viewerId) sort = 'trending';
+
+            const windowLimit = limitNum * (sort === 'for_you' ? AFFINITY_WINDOW_MULT : 3);
             const freshSince = new Date(Date.now() - FRESH_WINDOW_MS);
 
-            const [windowSubs, freshSubs] = await Promise.all([
+            const [windowSubs, freshSubs, affinity] = await Promise.all([
                 Submission.find(filter)
                     .sort({ feedScore: -1, createdAt: -1 })
                     .limit(windowLimit)
@@ -224,10 +307,13 @@ router.get('/', async (req, res) => {
                     .sort({ createdAt: -1 })
                     .limit(limitNum)
                     .populate('challengeId')
-                    .lean()
+                    .lean(),
+                sort === 'for_you' ? buildTagAffinity(viewerId) : Promise.resolve(new Map())
             ]);
 
-            const assembled = assembleFeed(windowSubs, freshSubs, limitNum);
+            const assembled = sort === 'for_you'
+                ? rankForYou(windowSubs, affinity, limitNum)
+                : assembleFeed(windowSubs, freshSubs, limitNum);
             const page = assembled.slice(skip, skip + limitNum);
 
             await recordServe(page, viewerId);
@@ -299,3 +385,5 @@ router.get('/', async (req, res) => {
 
 module.exports = router;
 module.exports.assembleFeed = assembleFeed;
+module.exports.rankForYou = rankForYou;
+module.exports.buildTagAffinity = buildTagAffinity;

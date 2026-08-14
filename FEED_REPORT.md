@@ -165,6 +165,8 @@ Per minute:    ~1 API call, ~50KB transferred (idle)
 
 **Solution:** Track user interactions (likes, ratings, shares), suggest similar content.
 
+**Status: DONE (v1)** — `sort=for_you` reorders the global scored pool by challenge-tag affinity from explicit positive signals (rated ≥4★, liked, shared). `personalized = feedScore × (1 + 0.5 × tagOverlap)` — an additive delivery-layer boost; `feedScore` itself stays global and manipulation-resistant. Same eligibility, studio cap, sub-challenge interleave, and impression serving as trending. Cold start (no profile / signed out) falls back to trending.
+
 **Impact:** Higher engagement, longer session times.
 
 ---

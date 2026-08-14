@@ -350,6 +350,25 @@ Sub-challenge cards are a **generated item type** in Feed Assembly — the serve
 
 ---
 
+## "For You" personalized feed (delivery-layer personalization)
+
+**Principle holds:** `feedScore` is global and manipulation-resistant; personalization happens only in the delivery layer as an **additive reorder of the scored pool** — a video can only be pulled *up*, never invented, and the boost is multiplicative on top of the real score.
+
+- **Signal:** tag affinity from explicit positive interactions — ratings ≥ 4★ (weight `rating − 2`), likes (1), shares (2, strongest intent). Each interacted video maps to its challenge's `tags`; tag weights accumulate.
+- **Score:** `personalized = feedScore × (1 + AFFINITY_BOOST × overlap)` where `overlap` = fraction of the video's challenge tags the user has shown affinity for (`AFFINITY_BOOST` default 0.5). Tiebreak `createdAt` desc.
+- **Window:** top `limit × 6` scored candidates (deeper than trending's ×3 so relevant-but-lower videos can surface).
+- **Guards kept:** same eligibility (approved, not-viewed, not-rated via `buildViewerExclusions`), studio cap (2), sub-challenge interleave, `recordServe` impressions.
+- **Cold start:** no affinity profile (or signed out) → falls back to plain trending; the tab is shown only to signed-in users.
+- **Anti-cheat:** affinity comes from explicit positive signals only; views/impressions don't feed it, so serve-flooding can't personalize your feed.
+
+### What's built (v1)
+1. `buildTagAffinity(viewerId)` in `routes/feed.js` — parallel rating/like/share queries → submission → challenge tags → weighted `Map<tag, weight>`.
+2. `rankForYou(windowSubs, affinity, limitNum)` — pure/exported reorder (overlap boost + studio cap + score tiebreak).
+3. `GET /api/feed?sort=for_you&viewerId=` — `for_you` falls back to `trending` when no viewer; window `limit×6`.
+4. Frontend — "For You" sort tab in `Discovered.jsx` (desktop sidebar + mobile top tabs), rendered only when signed in.
+
+---
+
 ## API & Schema Changes
 
 | File | Change |
@@ -388,6 +407,7 @@ Sub-challenge cards are a **generated item type** in Feed Assembly — the serve
 - [x] **9. Feed assembly:** **freshness floor + studio cap + challenge round-robin implemented** in `assembleFeed()` (window-fetch, in-memory, no per-viewer cache, deterministic within a worker window). Fresh-floor subs lead their challenge group; each pass pops one candidate per challenge so a single challenge can't dominate or sit adjacent to itself.
 - [x] **11. Rate limiting** on interactions — `utils/rateLimit.js` (120 actions/hr/user, env `INTERACTION_RATE_LIMIT`, in-memory, 429 on exceed), applied to like/rate/comment/share.
 - [x] **12. User model + trust-weighted votes** — `models/User.js`, `utils/trust.js` (`computeTrust`), worker `syncUserTrust` + weighted aggregation feeding `wilson()`; rate upsert on `/rate`; rate-limit hits persisted as a reserved flag.
+- [x] **13. "For You" personalized feed** — `sort=for_you` reorders the scored pool by tag affinity (additive boost, score untouched); cold-start falls back to trending; signed-in tab in `Discovered.jsx`.
 
 ### Scale triggers (defer all until needed)
 - Feed query consistently > 100 ms → add global top-pool in-memory cache.
