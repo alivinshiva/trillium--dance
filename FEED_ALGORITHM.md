@@ -303,7 +303,7 @@ A 4-week challenge where every studio uploads in week 1 means zero new *uploads*
 
 ---
 
-## Sub-Challenges (future): generated content that never runs dry
+## Sub-Challenges (implemented): generated content that never runs dry
 
 Your hook-vs-hook idea is the strongest anti-drought lever because it converts *existing* uploads into a **new, self-generating content type**.
 
@@ -331,18 +331,22 @@ SubChallengeVote { subChallengeId, userId, choice: 'A' | 'B', createdAt }
 ```
 
 ### Pairing rules (fairness + freshness)
-- Same challenge only; pair videos with **similar rating count/average** (competitive matchups).
-- Don't pair the same studio against itself; rotate `type` (hook/transition/ending) to avoid monotony.
+- Same challenge only; pair videos with **similar wilson score** (`|wilson − wilson| ≤ 0.8` in `workers/subChallenges.js`).
+- Both videos must be **proven**: `wilsonScore > 0` (already cleared the minRatings gate) so voters have a real signal.
+- Don't pair the same studio against itself; rotate `type` (hook/transition/ending) to avoid monotony; max **3 concurrent battles per video**; never re-pair an existing active matchup.
 - Track which matchups a viewer has already voted on (`SubChallengeVote`), exclude them from that viewer's future feeds — the same "already-engaged" rule as Requirement 1.
-- Segment defaults to the first 8 seconds in v1; later let studios define their hook window at upload time.
+- Segment defaults to the first 8 seconds in v1 (frontend plays the muted looped hook); later let studios define their hook window at upload time.
 
 ### Feed integration
 Sub-challenge cards are a **generated item type** in Feed Assembly — the server marks `item.type = 'sub_challenge'` and interleaves ~1 per 10 slots (like YouTube interleaves Shorts). They do **not** consume studio-cap or freshness-floor slots; they're an interleave, not a rank. Scoring them is separate (win-rate + vote volume), not part of the video ranking.
 
-### What to build first (when we get here)
-1. `SubChallenge` + `SubChallengeVote` models, pairing generator, vote route with rate limit.
-2. Interleave in feed assembly (window-fetch then merge ~10%).
-3. "Best Hook" studio badge surfaced on the leaderboard page.
+### What's built (v1)
+1. `SubChallenge` + `SubChallengeVote` models (`models/SubChallenge.js`, `models/Interaction.js`) — unique index on `(subChallengeId, userId)`.
+2. `workers/subChallenges.js` — 10-min worker: **closes** battles on 20 votes OR 48h (majority wins, ties discarded), then **generates** new pairs (same challenge, both `wilsonScore > 0`, `|wilson − wilson| ≤ 0.8`, never same studio, max 3 concurrent battles per video, no duplicate active pairs, hook/transition/ending type rotation).
+3. `routes/subChallenges.js` — `GET /next` (active unvoted, oldest first, per-viewer) + `POST /vote` (rate-limited, idempotent).
+4. Feed interleave in `routes/feed.js` — ~1 sub-challenge card per 10 trending slots (page-offset skips so cards rotate across pages); cards don't consume studio-cap/freshness-floor slots and never block the video feed.
+5. Frontend — `SubChallengeCard.jsx` full-slide A/B player (muted looped previews, vote → locked results with live counts), guarded `Discovered.jsx` so video-only effects/overlays skip sub-challenge slides.
+6. **Next:** "Best Hook" studio badge on the leaderboard page (win-rate from closed battles).
 
 ---
 

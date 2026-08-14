@@ -4,6 +4,7 @@ import { useVideo } from '../context/VideoContext';
 import { useUser, useClerk } from '@clerk/clerk-react';
 import { Play, Heart, MessageCircle, Share2, Music, ChevronUp, ChevronDown, Check, Home, Trophy, BarChart2, User, Lock, Trash2, MapPin } from 'lucide-react';
 import Navbar from './Navbar';
+import SubChallengeCard from './SubChallengeCard';
 
 
 
@@ -65,19 +66,19 @@ const Discovered = () => {
     }, []);
 
     const currentVideo = videos[currentIndex];
+    const isSubChallenge = currentVideo?.type === 'sub_challenge';
 
     useEffect(() => {
-        if (currentVideo) {
-            setProgress(0); // Reset progress on video change
-            const loadStats = async () => {
-                const data = await getVideoStats(currentVideo._id);
-                if (data) {
-                    setInteractionStats(data.stats);
-                    setUserInteraction(data.user);
-                }
-            };
-            loadStats();
-        }
+        if (!currentVideo || isSubChallenge) return;
+        setProgress(0); // Reset progress on video change
+        const loadStats = async () => {
+            const data = await getVideoStats(currentVideo._id);
+            if (data) {
+                setInteractionStats(data.stats);
+                setUserInteraction(data.user);
+            }
+        };
+        loadStats();
     }, [currentVideo, getVideoStats, user]);
 
     const handleLike = async () => {
@@ -126,7 +127,7 @@ const Discovered = () => {
     // Sync Sliders with existing User Rating
     // Sync Sliders with existing User Rating or Defaults
     useEffect(() => {
-        if (currentVideo && currentVideo.challengeId) {
+        if (currentVideo && !isSubChallenge && currentVideo.challengeId) {
             const params = currentVideo.challengeId.ratingParameters || [
                 { name: 'Energy', weight: 10 },
                 { name: 'Choreo', weight: 10 },
@@ -149,6 +150,7 @@ const Discovered = () => {
     const [commentPresets, setCommentPresets] = useState({ positive: [], neutral: [], negative: [] });
 
     useEffect(() => {
+        if (isSubChallenge) return;
         const loadPresets = async () => {
             if (currentVideo && currentVideo.challengeId && currentVideo.challengeId.presetComments) {
                 setCommentPresets(currentVideo.challengeId.presetComments);
@@ -195,7 +197,7 @@ const Discovered = () => {
 
     // Update URL when current video changes
     useEffect(() => {
-        if (currentVideo) {
+        if (currentVideo && !isSubChallenge) {
             navigate(`/discovered/feed/${currentVideo._id}`, { replace: true });
         }
     }, [currentVideo, navigate]);
@@ -401,7 +403,17 @@ const Discovered = () => {
                 )}
 
                 {/* Desktop Overlays */}
-                {!isMobile && (
+                {!isMobile && isSubChallenge && (
+                    <div className="absolute right-8 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-4">
+                        <button onClick={handlePrev} disabled={currentIndex === 0} className="p-3 bg-white/5 rounded-full hover:bg-white/20 disabled:opacity-0 transition-all self-center">
+                            <ChevronUp size={24} color="white" />
+                        </button>
+                        <button onClick={handleNext} disabled={currentIndex === videos.length - 1} className="p-3 bg-white/5 rounded-full hover:bg-white/20 disabled:opacity-0 transition-all self-center">
+                            <ChevronDown size={24} color="white" />
+                        </button>
+                    </div>
+                )}
+                {!isMobile && !isSubChallenge && (
                     <>
                         {/* Bottom-Left Info Overlay */}
                         <div className="absolute left-8 bottom-8 z-30 max-w-md text-left shadow-black drop-shadow-lg pointer-events-none">
@@ -551,33 +563,39 @@ const Discovered = () => {
                 )}
 
                 {/* Video Player Container */}
-                <div className={`relative h-full ${isMobile ? 'w-full' : 'aspect-[9/16] max-w-[500px] border-x border-white/5'}`} onClick={togglePlay}>
-                    <video ref={videoRef} src={currentVideo.videoUrl} className="w-full h-full object-contain" autoPlay loop playsInline onTimeUpdate={handleTimeUpdate} />
-                    {!isPlaying && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10 pointer-events-none">
-                            <Play size={64} fill="white" className="text-white opacity-80" />
-                        </div>
-                    )}
+                <div className={`relative h-full ${isMobile ? 'w-full' : 'aspect-[9/16] max-w-[500px] border-x border-white/5'}`} onClick={isSubChallenge ? undefined : togglePlay}>
+                    {isSubChallenge ? (
+                        <SubChallengeCard subChallenge={currentVideo.subChallenge} />
+                    ) : (
+                        <>
+                            <video ref={videoRef} src={currentVideo.videoUrl} className="w-full h-full object-contain" autoPlay loop playsInline onTimeUpdate={handleTimeUpdate} />
+                            {!isPlaying && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10 pointer-events-none">
+                                    <Play size={64} fill="white" className="text-white opacity-80" />
+                                </div>
+                            )}
 
-                    {/* Seek Bar */}
-                    <div
-                        className={`absolute inset-x-0 z-30 h-0.5 bg-gray-500/50 cursor-pointer ${isMobile ? 'bottom-[53px]' : 'bottom-0'}`}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            step="0.1"
-                            value={progress || 0}
-                            onChange={handleSeek}
-                            className="w-full h-full absolute inset-0 opacity-0 cursor-pointer z-40 m-0 p-0"
-                        />
-                        <div
-                            className="h-full bg-white relative z-30 pointer-events-none transition-all duration-75"
-                            style={{ width: `${progress}%` }}
-                        />
-                    </div>
+                            {/* Seek Bar */}
+                            <div
+                                className={`absolute inset-x-0 z-30 h-0.5 bg-gray-500/50 cursor-pointer ${isMobile ? 'bottom-[53px]' : 'bottom-0'}`}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    step="0.1"
+                                    value={progress || 0}
+                                    onChange={handleSeek}
+                                    className="w-full h-full absolute inset-0 opacity-0 cursor-pointer z-40 m-0 p-0"
+                                />
+                                <div
+                                    className="h-full bg-white relative z-30 pointer-events-none transition-all duration-75"
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </div>
+                        </>
+                    )}
 
                     {/* Loading More Indicator */}
                     {feedLoading && (
@@ -598,7 +616,7 @@ const Discovered = () => {
                     )}
 
                     {/* Mobile Controls Overlay */}
-                    {isMobile && (
+                    {isMobile && !isSubChallenge && (
                         <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col justify-end pb-[60px]">
                             {/* Interaction Area (Dynamic Height) */}
                             <div className="flex w-full h-auto items-end">

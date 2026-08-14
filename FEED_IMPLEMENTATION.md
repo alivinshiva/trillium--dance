@@ -46,6 +46,27 @@ Aggregation pipeline: `$lookup` ratingStats → `$addFields` `averageRating/rati
 
 ### `showgrid-landing/src/context/VideoContext.jsx` — `fetchFeed` appends `viewerId: user.id`.
 ### `showgrid-landing/src/components/Discovered.jsx` — sort tabs: Latest | Top | Trending.
+### `showgrid-landing/src/components/SubChallengeCard.jsx` — full-slide A/B battle card (muted looped previews, vote → locked live results).
+
+---
+
+## Sub-Challenges (A/B hook battles)
+
+### `showgrid-be/models/SubChallenge.js` — `{ challengeId, type, videoAId, videoBId, segmentA/B, status: active|closed, votesA, votesB, winnerId, endsAt }`; indexes on `{status, endsAt}` and `{status, videoAId/BId}`.
+
+### `showgrid-be/models/Interaction.js` — `SubChallengeVote { subChallengeId, userId, choice: A|B }` with **unique** index `{subChallengeId, userId}` (idempotent votes).
+
+### `showgrid-be/workers/subChallenges.js` — 10-min worker (started from `server.js`):
+- `closeExpired()` — closes active battles on **20 votes OR 48h** (majority wins; ties → no winner).
+- `generatePairs()` / `buildPairs()` (pure) — new pairs: same challenge, both `wilsonScore > 0`, `|wilson − wilson| ≤ 0.8`, never same studio, max 3 concurrent battles per video, no duplicate active pairs, type rotation `hook → transition → ending`.
+- Knobs: `VOTE_THRESHOLD` 20, `CHALLENGE_LIFETIME_MS` 48h, `SCORE_PARITY` 0.8, `CONCURRENT_CAP_PER_VIDEO` 3, `NEW_PAIRS_PER_RUN` 10.
+
+### `showgrid-be/routes/subChallenges.js`
+- `GET /next?userId=&challengeId=&limit=&skip=` — active, unvoted battles, oldest first.
+- `POST /vote` — rate-limited, idempotent (unique index); returns `{ votesA, votesB, choice, alreadyVoted }`.
+
+### Feed interleave (`routes/feed.js`)
+- `getUnvotedSubChallenges()` + `interleaveSubChallenges()` — ~1 card per 10 trending slots; page-offset skip rotates cards across pages; cards are `{ type: 'sub_challenge', subChallenge }` and don't touch studio-cap/freshness-floor/recordServe.
 
 ---
 
@@ -181,4 +202,4 @@ activeRaters = count of distinct users who have ever rated
 
 - **Weaken vote-stuffing further:** lower `TRUST_FLOOR`, raise `HISTORY_FULL` (need more history for full trust), or bump the agreement weight.
 
-Not implemented yet (see FEED_ALGORITHM.md): `VideoView`-based "hide viewed", sub-challenges.
+Not implemented yet (see FEED_ALGORITHM.md): `VideoView`-based "hide viewed", "Best Hook" studio badge on the leaderboard.

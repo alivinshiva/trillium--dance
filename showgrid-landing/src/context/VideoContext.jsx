@@ -210,6 +210,23 @@ export const VideoProvider = ({ children }) => {
         }
     };
 
+    const voteSubChallenge = async (subChallengeId, choice) => {
+        const token = await getToken();
+        const res = await fetch(`${API_URL}/sub-challenges/vote`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ subChallengeId, userId: user.id, choice })
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || 'Failed to vote');
+        }
+        return await res.json();
+    };
+
     const getVideoStats = async (videoId) => {
         try {
             const url = new URL(`${API_URL}/interactions/video/${videoId}`);
@@ -357,6 +374,7 @@ export const VideoProvider = ({ children }) => {
             likeVideo,
             rateVideo,
             shareVideo,
+            voteSubChallenge,
             getVideoStats,
             getLeaderboard,
             getPublicVideoUrl,
