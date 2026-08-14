@@ -297,6 +297,20 @@ export const VideoProvider = ({ children }) => {
         }
     };
 
+    const getBestHook = async (challengeId) => {
+        try {
+            let url = `${API_URL}/sub-challenges/best-hook`;
+            if (challengeId) url += `?challengeId=${challengeId}`;
+
+            const res = await fetch(url);
+            if (res.ok) return await res.json();
+            return { studio: null, rankings: [] };
+        } catch (err) {
+            console.error("Error fetching best hook:", err);
+            return { studio: null, rankings: [] };
+        }
+    };
+
     const getPublicVideoUrl = (videoId) => {
         return `${window.location.origin}/discovered/feed/${videoId}`;
     };
@@ -377,6 +391,7 @@ export const VideoProvider = ({ children }) => {
             voteSubChallenge,
             getVideoStats,
             getLeaderboard,
+            getBestHook,
             getPublicVideoUrl,
             nativeShare,
             updateSubmissionStatus

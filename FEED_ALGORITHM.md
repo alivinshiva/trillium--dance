@@ -346,7 +346,7 @@ Sub-challenge cards are a **generated item type** in Feed Assembly — the serve
 3. `routes/subChallenges.js` — `GET /next` (active unvoted, oldest first, per-viewer) + `POST /vote` (rate-limited, idempotent).
 4. Feed interleave in `routes/feed.js` — ~1 sub-challenge card per 10 trending slots (page-offset skips so cards rotate across pages); cards don't consume studio-cap/freshness-floor slots and never block the video feed.
 5. Frontend — `SubChallengeCard.jsx` full-slide A/B player (muted looped previews, vote → locked results with live counts), guarded `Discovered.jsx` so video-only effects/overlays skip sub-challenge slides.
-6. **Next:** "Best Hook" studio badge on the leaderboard page (win-rate from closed battles).
+6. **"Best Hook" badge** — `GET /sub-challenges/best-hook` ranks studios from closed battles by `hookScore = winRate · log1p(battles)` (0 below 3 battles, so a 2-win fluke can't win); badge card rendered on the leaderboard page alongside the podium.
 
 ---
 

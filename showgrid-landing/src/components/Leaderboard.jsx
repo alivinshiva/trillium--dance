@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { useVideo } from '../context/VideoContext';
-import { Crown, MapPin, Share2 } from 'lucide-react'; // Added Share2
+import { Crown, MapPin, Share2, Flame } from 'lucide-react'; // Added Share2
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
@@ -10,8 +10,9 @@ const Leaderboard = () => {
     const { user } = useUser();
     const { challengeId } = useParams();
     const navigate = useNavigate();
-    const { challenges, getLeaderboard } = useVideo();
+    const { challenges, getLeaderboard, getBestHook } = useVideo();
     const [stats, setStats] = useState([]);
+    const [bestHook, setBestHook] = useState(null);
     const [loading, setLoading] = useState(false);
 
     // Sync URL with selection or default to first
@@ -30,12 +31,13 @@ const Leaderboard = () => {
 
         const load = async () => {
             setLoading(true);
-            const data = await getLeaderboard(challengeId);
+            const [data, hook] = await Promise.all([getLeaderboard(challengeId), getBestHook(challengeId)]);
             setStats(data);
+            setBestHook(hook);
             setLoading(false);
         };
         load();
-    }, [challengeId, getLeaderboard]);
+    }, [challengeId, getLeaderboard, getBestHook]);
 
     // Top 3
     const top3 = stats.slice(0, 3);
@@ -84,6 +86,33 @@ const Leaderboard = () => {
                         <div className="text-center py-20 text-white/40">No participants yet. Be the first!</div>
                     ) : (
                         <>
+                            {/* Best Hook Badge */}
+                            {bestHook && bestHook.studio && (
+                                <div className="flex justify-center mb-12 md:mb-16">
+                                    <div className="relative max-w-md w-full mx-auto px-2">
+                                        <div className="bg-gradient-to-r from-orange-500/20 via-primary/20 to-purple-500/20 border border-primary/40 rounded-2xl md:rounded-3xl p-4 md:p-5 flex items-center gap-4 shadow-[0_0_25px_rgba(236,72,153,0.15)]">
+                                            <div className="flex-none w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-orange-400 to-primary flex items-center justify-center shadow-lg">
+                                                <Flame size={28} className="text-white" fill="currentColor" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[10px] md:text-xs font-extrabold text-primary uppercase tracking-widest flex items-center gap-1">
+                                                    <Flame size={12} className="text-orange-400" fill="currentColor" /> Best Hook
+                                                </p>
+                                                <h3 className="text-lg md:text-2xl font-extrabold text-white truncate">
+                                                    {bestHook.studio.userName || bestHook.studio.studio}
+                                                </h3>
+                                                <p className="text-[10px] md:text-xs text-white/50">
+                                                    {bestHook.studio.wins}W · {bestHook.studio.battles - bestHook.studio.wins}L · {Math.round((bestHook.studio.winRate || 0) * 100)}% battle win rate
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="absolute -top-2 -right-1 md:-top-3 md:-right-2 bg-primary text-white text-[9px] md:text-[10px] font-extrabold uppercase tracking-widest px-2.5 md:px-3 py-1 rounded-full shadow-lg">
+                                            #1
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Top 3 Podium */}
                             <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-8 items-end max-w-4xl mx-auto mb-16 md:mb-20 px-1 sm:px-4 w-full">
                                 {/* 2nd Place */}

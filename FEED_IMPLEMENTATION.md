@@ -64,6 +64,8 @@ Aggregation pipeline: `$lookup` ratingStats → `$addFields` `averageRating/rati
 ### `showgrid-be/routes/subChallenges.js`
 - `GET /next?userId=&challengeId=&limit=&skip=` — active, unvoted battles, oldest first.
 - `POST /vote` — rate-limited, idempotent (unique index); returns `{ votesA, votesB, choice, alreadyVoted }`.
+- `GET /best-hook?challengeId=` — `rankBestHook()` (pure, exported): closed battles → per-studio `{ battles, wins, winRate, hookScore }` where `hookScore = winRate · log1p(battles)`, `0` under `MIN_BATTLES` (3); returns top studio + top-5 rankings.
+- `showgrid-landing/src/components/Leaderboard.jsx` — "Best Hook" badge card (Flame icon, studio, W-L record, win rate) rendered with the podium.
 
 ### Feed interleave (`routes/feed.js`)
 - `getUnvotedSubChallenges()` + `interleaveSubChallenges()` — ~1 card per 10 trending slots; page-offset skip rotates cards across pages; cards are `{ type: 'sub_challenge', subChallenge }` and don't touch studio-cap/freshness-floor/recordServe.
@@ -202,4 +204,4 @@ activeRaters = count of distinct users who have ever rated
 
 - **Weaken vote-stuffing further:** lower `TRUST_FLOOR`, raise `HISTORY_FULL` (need more history for full trust), or bump the agreement weight.
 
-Not implemented yet (see FEED_ALGORITHM.md): `VideoView`-based "hide viewed", "Best Hook" studio badge on the leaderboard.
+Not implemented yet (see FEED_ALGORITHM.md): `VideoView`-based "hide viewed".
