@@ -147,13 +147,23 @@ Multiple stat cards showed fabricated data (rank #42, score 12,850, 94% retentio
 
 ## Part 4: Not Yet Done / Backlog
 
-### Must Fix
+### Done
 
-| Item | Why |
-|------|-----|
-| **Tags invisible after upload** | Users select tags during upload but never see them in feed, leaderboard, or profile. Tags only power the backend For You algorithm. |
-| **No free-text comment input** | Backend supports any body text, but frontend only exposes preset pills. Users can't write their own feedback. |
-| **Dashboard/Profile stats need real APIs** | Currently showing "—" placeholders. Needs `GET /api/users/:id/stats` or similar to pull real data. |
+| Item | Commit |
+|------|--------|
+| ~~**Tags invisible after upload**~~ | `3513252` — hashtag pills now shown in feed overlays (desktop + mobile) |
+
+### Blocked (need account model decisions)
+
+| Item | Blocker |
+|------|---------|
+| **Dashboard/Profile stats need real APIs** | Waiting on Studio vs User account model — see `ACCOUNT_MODEL_QUESTIONS.md` |
+
+### Intentional Design (not a bug)
+
+| Item | Why it's this way |
+|------|-------------------|
+| **No free-text comment input** | Preset-only is by design. Backend supports free text but frontend intentionally restricts to presets for quality control. |
 
 ### Should Fix
 

@@ -531,6 +531,15 @@ const Discovered = () => {
                                         {currentVideo.description}
                                     </p>
                                 )}
+                                {currentVideo.tags && currentVideo.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 mt-3">
+                                        {currentVideo.tags.slice(0, 5).map((tag, i) => (
+                                            <span key={i} className="text-[10px] px-2 py-0.5 bg-white/10 rounded-full text-white/50 font-medium">
+                                                #{tag.startsWith('#') ? tag.slice(1) : tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -723,6 +732,15 @@ const Discovered = () => {
 
                                         {currentVideo.description && !currentVideo.description.startsWith('Performing from') && (
                                             <p className="text-xs text-white/80 line-clamp-2">{currentVideo.description}</p>
+                                        )}
+                                        {currentVideo.tags && currentVideo.tags.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mt-1.5">
+                                                {currentVideo.tags.slice(0, 4).map((tag, i) => (
+                                                    <span key={i} className="text-[9px] px-1.5 py-0.5 bg-white/10 rounded-full text-white/50 font-medium">
+                                                        #{tag.startsWith('#') ? tag.slice(1) : tag}
+                                                    </span>
+                                                ))}
+                                            </div>
                                         )}
                                     </div>
 

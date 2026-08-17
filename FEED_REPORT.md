@@ -307,5 +307,6 @@ All seven scope items are done. When you want to extend the feed, pick from Part
 | **`FEED_ALGORITHM.md`** | The **design** doc: the core principle, threat model, score formula rationale, re-show policy, feed assembly design, plan checkboxes. "Why it works." |
 | **`FEED_IMPLEMENTATION.md`** | The **reference** doc: exact file map, exact formulas as implemented, every tunable knob and where to change it, data flow end-to-end, change examples. "Where to change it." |
 | **`UI_V2_REPORT.md`** | The **frontend** doc: what changed in v2, bugs fixed, current UI state, backlog, file map. "What the user sees." |
+| **`ACCOUNT_MODEL_QUESTIONS.md`** | Open questions about Studio vs User accounts. Read this to unblock stats API and dashboard wiring. |
 
 > Older drafts (`FEED_PROBLEMS.md`, `FEED_IMPROVEMENTS.md`, `FEED_PLAN.md`) were **merged into this doc** and deleted — their content is preserved here and in git history. The per-commit history for every change above is in the repo's `git log`.
