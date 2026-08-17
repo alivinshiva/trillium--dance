@@ -4,6 +4,15 @@
 run-sonar-analysis.sh
 
 .DS_Store
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfstate.*.backup
+terraform.tfvars
+!infra/variables.tf
+!infra/main.tf
 ai-rating/node_modules/*
 JULES_PROMPT.md
 all_environments.txt
