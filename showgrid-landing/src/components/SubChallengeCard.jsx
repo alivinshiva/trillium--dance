@@ -3,6 +3,12 @@ import { useUser, useClerk } from '@clerk/clerk-react';
 import { useVideo } from '../context/VideoContext';
 import { Zap, Check } from 'lucide-react';
 
+const BATTLE_QUESTIONS = {
+    hook: 'Which hook is stronger?',
+    transition: 'Which transition is cleaner?',
+    ending: 'Which ending hits harder?',
+};
+
 const SubChallengeCard = ({ subChallenge, onVoted }) => {
     const { user } = useUser();
     const { openSignIn } = useClerk();
@@ -74,7 +80,7 @@ const SubChallengeCard = ({ subChallenge, onVoted }) => {
                 <p className="text-[10px] font-extrabold text-white/60 uppercase tracking-widest flex items-center justify-center gap-1">
                     <Zap size={12} className="text-primary" /> {sc.type} battle
                 </p>
-                <p className="text-xs font-bold text-white mt-1">Which hook is stronger?</p>
+                <p className="text-xs font-bold text-white mt-1">{BATTLE_QUESTIONS[sc.type] || 'Which is stronger?'}</p>
             </div>
             <div className="flex-1 flex flex-col min-h-0">
                 <Option video={a} side="A" />

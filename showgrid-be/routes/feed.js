@@ -262,11 +262,11 @@ router.get('/', async (req, res) => {
         const {
             page = 1,
             limit = 10,
-            sort = 'latest',
             challengeId,
             userId,
             viewerId
         } = req.query;
+        let sort = req.query.sort || 'latest';
 
         const pageNum = Math.max(1, parseInt(page));
         const limitNum = Math.min(50, Math.max(1, parseInt(limit)));

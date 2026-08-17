@@ -169,9 +169,9 @@ const Profile = () => {
                             </span>
                         )}
                     </button>
-                    <a href="#settings" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
+                    <span className="flex items-center gap-3 px-4 py-3 text-white/30 cursor-not-allowed" title="Coming soon">
                         <Settings size={20} /> Settings
-                    </a>
+                    </span>
                 </nav>
 
                 <SignOutButton>
@@ -233,9 +233,9 @@ const Profile = () => {
                             <Star size={80} />
                         </div>
                         <h3 className="text-xs font-bold text-white/40 tracking-widest uppercase mb-2">Performances Rated</h3>
-                        <div className="text-5xl font-extrabold mb-2">128</div>
-                        <div className="text-green-400 text-xs font-bold flex items-center gap-1">
-                            <ChevronRight size={12} className="-rotate-45" /> +12 this week
+                        <div className="text-5xl font-extrabold mb-2">—</div>
+                        <div className="text-white/30 text-xs font-bold">
+                            Coming soon
                         </div>
                     </div>
 
@@ -245,9 +245,9 @@ const Profile = () => {
                             <Trophy size={80} />
                         </div>
                         <h3 className="text-xs font-bold text-white/40 tracking-widest uppercase mb-2">Correct Predictions</h3>
-                        <div className="text-5xl font-extrabold mb-2">42</div>
-                        <div className="text-primary text-xs font-bold flex items-center gap-1">
-                            <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div> Top 5% of fans
+                        <div className="text-5xl font-extrabold mb-2">—</div>
+                        <div className="text-white/30 text-xs font-bold">
+                            Coming soon
                         </div>
                     </div>
 
@@ -257,9 +257,9 @@ const Profile = () => {
                             <MapPin size={80} />
                         </div>
                         <h3 className="text-xs font-bold text-white/40 tracking-widest uppercase mb-2">Cities Supported</h3>
-                        <div className="text-5xl font-extrabold mb-2">05</div>
-                        <div className="text-white/40 text-xs font-bold">
-                            Across 3 regions
+                        <div className="text-5xl font-extrabold mb-2">—</div>
+                        <div className="text-white/30 text-xs font-bold">
+                            Coming soon
                         </div>
                     </div>
                 </div>
@@ -276,19 +276,17 @@ const Profile = () => {
                             <div className="flex-1 w-full">
                                 <div className="text-xs font-bold text-white/40 tracking-widest uppercase mb-2">YOUR HOME CITY</div>
                                 <div className="text-4xl md:text-5xl font-extrabold mb-8">
-                                    Mumbai <span className="text-white/20 mx-2">•</span> <span className="text-primary">Rank #2</span>
+                                    <span className="text-white/30">—</span>
                                 </div>
 
                                 <div className="flex justify-between items-end mb-2">
                                     <span className="text-sm font-bold text-white/60">Contribution to Rank #1</span>
-                                    <span className="text-2xl font-bold text-white">78%</span>
+                                    <span className="text-2xl font-bold text-white/30">—</span>
                                 </div>
                                 <div className="h-4 bg-white/5 rounded-full overflow-hidden mb-4">
-                                    <div className="h-full bg-gradient-to-r from-primary to-purple-600 w-[78%] rounded-full relative">
-                                        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/diagonal-stripes.png')] opacity-20"></div>
-                                    </div>
+                                    <div className="h-full bg-white/10 w-0 rounded-full"></div>
                                 </div>
-                                <p className="text-white/40 text-sm italic mb-8">"You've contributed 450 points to your city's standing."</p>
+                                <p className="text-white/30 text-sm italic mb-8">City stats will appear after your first rated performance.</p>
 
                                 <button className="btn btn-outline border-white/10 bg-white/5 hover:bg-white/10 text-xs px-6 py-3 tracking-widest">
                                     VIEW NATIONAL LEADERBOARD

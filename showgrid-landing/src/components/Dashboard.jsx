@@ -49,9 +49,9 @@ const Dashboard = () => {
                     <Link to="/profile" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
                         <User size={20} /> My Profile
                     </Link>
-                    <a href="#settings" className="flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
+                    <span className="flex items-center gap-3 px-4 py-3 text-white/30 cursor-not-allowed" title="Coming soon">
                         <Settings size={20} /> Settings
-                    </a>
+                    </span>
                 </nav>
 
                 <SignOutButton>
@@ -104,22 +104,22 @@ const Dashboard = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <StatsCard
                                 title="Global Rank"
-                                value="#42"
-                                subtitle="+3 spots this week"
+                                value="—"
+                                subtitle=""
                                 icon={<TrendingUp size={20} className="text-pink-500" />}
                                 color="pink"
                             />
                             <StatsCard
                                 title="Total Grid Score"
-                                value="12,850"
+                                value="—"
                                 subtitle=""
                                 icon={<Zap size={20} className="text-pink-500" />}
                                 color="pink"
                             />
                             <StatsCard
                                 title="Audience Retention"
-                                value="94%"
-                                subtitle="+12% Monthly Growth"
+                                value="—"
+                                subtitle=""
                                 icon={<Activity size={20} className="text-pink-500" />}
                                 color="pink"
                             />
@@ -187,35 +187,35 @@ const Dashboard = () => {
                                     <div className="space-y-2">
                                         <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
                                             <span>Energy</span>
-                                            <span className="text-pink-500">98%</span>
+                                            <span className="text-white/30">—</span>
                                         </div>
                                         <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                                            <div className="h-full bg-pink-500 w-[98%] shadow-[0_0_10px_#ec4899] rounded-full"></div>
+                                            <div className="h-full bg-white/10 w-0 rounded-full"></div>
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
                                             <span>Choreography</span>
-                                            <span className="text-pink-500">85%</span>
+                                            <span className="text-white/30">—</span>
                                         </div>
                                         <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                                            <div className="h-full bg-pink-500 w-[85%] shadow-[0_0_10px_#ec4899] rounded-full"></div>
+                                            <div className="h-full bg-white/10 w-0 rounded-full"></div>
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
                                             <span>Sync</span>
-                                            <span className="text-pink-500">92%</span>
+                                            <span className="text-white/30">—</span>
                                         </div>
                                         <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                                            <div className="h-full bg-pink-500 w-[92%] shadow-[0_0_10px_#ec4899] rounded-full"></div>
+                                            <div className="h-full bg-white/10 w-0 rounded-full"></div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="mt-8 pt-6 border-t border-white/10">
-                                    <p className="text-xs text-white/50 italic text-center">
-                                        "Your energy levels are consistently in the top 1% of the 'Urban' category."
+                                    <p className="text-xs text-white/30 italic text-center">
+                                        Stats will appear after your first rated performance.
                                     </p>
                                 </div>
                             </div>
@@ -230,22 +230,22 @@ const Dashboard = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <StatsCard
                                 title="Performances Rated"
-                                value="156"
-                                subtitle="Active Reviewer Badge"
+                                value="—"
+                                subtitle=""
                                 icon={<Star size={20} className="text-cyan-400" />}
                                 color="cyan"
                             />
                             <StatsCard
                                 title="City Pride"
-                                value="Mumbai"
-                                subtitle="Impact Zone A"
+                                value="—"
+                                subtitle=""
                                 icon={<MapPin size={20} className="text-cyan-400" />}
                                 color="cyan"
                             />
                             <StatsCard
                                 title="Points Earned"
-                                value="2,400"
-                                subtitle="Redeem for voting power"
+                                value="—"
+                                subtitle=""
                                 icon={<Trophy size={20} className="text-cyan-400" />}
                                 color="cyan"
                             />
