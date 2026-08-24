@@ -1,6 +1,6 @@
 # Mobile App Plan — iOS + Android
 
-> Extends ShowGrid to native mobile. The backend and DB are **reused as-is** (with a hardening pass); the decision to make is client tech. Companion to `FEED_REPORT.md` / `UI_V2_REPORT.md` — read those for how the web app works today.
+> Extends ShowGrid to native mobile. The backend and DB are **reused as-is** (with a hardening pass); the decision to make is client tech. Companion docs: `FEED_REPORT.md` / `UI_V2_REPORT.md` for how the web app works today, `MOBILE_SCREENS.md` for the screen-by-screen build checklist.
 
 ---
 

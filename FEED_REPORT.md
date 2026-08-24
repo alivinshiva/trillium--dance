@@ -310,5 +310,6 @@ All seven scope items are done. When you want to extend the feed, pick from Part
 | **`UI_V2_REPORT.md`** | The **frontend** doc: what changed in v2, bugs fixed, current UI state, backlog, file map. "What the user sees." |
 | **`ACCOUNT_MODEL_QUESTIONS.md`** | Open questions about Studio vs User accounts. Read this to unblock stats API and dashboard wiring. |
 | **`MOBILE_APP_PLAN.md`** | iOS/Android plan: Expo/RN decision, backend hardening challenges when reusing this backend/DB, mobile UI spec. |
+| **`MOBILE_SCREENS.md`** | Mobile screen-by-screen spec: every screen's contents, states, API calls, navigation links, deep-link map. |
 
 > Older drafts (`FEED_PROBLEMS.md`, `FEED_IMPROVEMENTS.md`, `FEED_PLAN.md`) were **merged into this doc** and deleted — their content is preserved here and in git history. The per-commit history for every change above is in the repo's `git log`.

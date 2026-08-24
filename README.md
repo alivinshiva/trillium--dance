@@ -114,6 +114,7 @@ Standalone script (`index.js` + `system_prompt.txt`) that sends video data to Cl
 | `UI_V2_REPORT.md` | Frontend: v2 changes, bugs fixed, current UI state, backlog, file map |
 | `ACCOUNT_MODEL_QUESTIONS.md` | Open questions blocking Studio vs Fan roles (stats API, dashboard wiring) |
 | `MOBILE_APP_PLAN.md` | iOS/Android plan: Expo/RN decision, backend hardening challenges, mobile UI spec |
+| `MOBILE_SCREENS.md` | Mobile screen-by-screen spec: inventory, contents, states, API calls, navigation map |
 | `infra/DEPLOY.md` | AWS deployment guide |
 
 > Convention: each major feature gets a narrative doc (`*_REPORT.md`) plus, where useful, a design doc and an implementation reference. Update docs in the same PR as code changes.
