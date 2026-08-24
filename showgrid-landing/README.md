@@ -1,16 +1,37 @@
-# React + Vite
+# ShowGrid — User Web App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Public-facing web app for the ShowGrid dance competition platform: TikTok-style vertical feed, challenges, A/B battles, leaderboard, ratings/comments, and upload flow.
 
-Currently, two official plugins are available:
+Part of the monorepo — see the root `README.md` for setup, env vars, and full documentation index.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Stack
 
-## React Compiler
+React 19 + Vite, Tailwind CSS v3, React Router v7, Clerk auth (`@clerk/clerk-react`), PWA plugin. Talks to the main API in `../showgrid-be` (port 5001).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Key source map
 
-## Expanding the ESLint configuration
+| Path | Purpose |
+|------|---------|
+| `src/components/Discovered.jsx` | Feed — vertical swipe, sort tabs, lazy video loading, comments drawer |
+| `src/components/SubChallengeCard.jsx` | A/B battle card — split-screen duel, vote → locked |
+| `src/components/Leaderboard.jsx` | Podium, Best Hook badge, challenge selector |
+| `src/components/Dashboard.jsx` / `Profile.jsx` | Stats views (placeholders pending account model) |
+| `src/context/VideoContext.jsx` | Feed state: fetchFeed, lazy URLs, comments, votes, leaderboard |
+| `src/context/NotificationContext.jsx` | SSE notifications stream |
+| `src/upload/` | 4-step upload flow |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Full component/route map and UI backlog: see `UI_V2_REPORT.md` at repo root.
+
+## Env
+
+Copy `.env.example` → `.env` and set `VITE_CLERK_PUBLISHABLE_KEY`.
+
+## Run
+
+```bash
+npm install
+npm run dev     # Vite dev server (5173)
+npm run build   # production build
+```
+
+Full-stack dev from repo root: `./start-all.sh`

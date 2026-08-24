@@ -1,16 +1,24 @@
-# React + Vite
+# ShowGrid Admin
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Admin dashboard for the ShowGrid dance competition platform: challenge management and submission moderation.
 
-Currently, two official plugins are available:
+Part of the monorepo — see the root `README.md` for setup, env vars, and full documentation index.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## What it does
 
-## React Compiler
+- Create/edit challenges (rating parameters, tags, preset comments)
+- Moderate submissions (approve / reject) — approval status gates the public feed (`showgrid-be` filters `status: 'approved'` at DB level)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Stack
 
-## Expanding the ESLint configuration
+React 19 + Vite, Tailwind CSS v4, React Router v7. Talks to the companion API in `../be-admin` (port 5000).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Run
+
+```bash
+npm install
+npm run dev     # Vite dev server (5173 or 5174 if taken)
+npm run build   # production build
+```
+
+Full-stack dev from repo root: `./start-all.sh`
